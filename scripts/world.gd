@@ -12,9 +12,12 @@ const OBJ := {
 	"f": ["fence_h", Vector2(16, 4), false, 3], "F": ["fence_post", Vector2(5, 4), false, 3], "v": ["fence_v", Vector2(5, 16), false, 1],
 	"l": ["lantern", Vector2(10, 6), false, 1], "j": ["jar", Vector2(10, 6), true, 1], "J": ["jar_red", Vector2(10, 6), true, 1],
 	"c": ["crate", Vector2(13, 8), false, 1],
+	"O": ["post", Vector2.ZERO, false, 1], "Y": ["jangseung", Vector2(8, 6), false, 1], "Z": ["jangseung2", Vector2(8, 6), false, 1],
+	"I": ["pillar", Vector2(10, 6), false, 1],
 }
 
-static var _tileset: TileSet
+static var _tilesets := {}
+var theme := ""
 static var _light_tex: Texture2D
 
 var key := ""
@@ -24,13 +27,13 @@ var player: CharacterBody2D
 var bounds := Rect2()
 var _foot := {}
 
-static func tileset() -> TileSet:
-	if _tileset:
-		return _tileset
+static func tileset(th := "") -> TileSet:
+	if _tilesets.has(th):
+		return _tilesets[th]
 	var ts := TileSet.new()
 	ts.tile_size = Vector2i(T, T)
 	var src := TileSetAtlasSource.new()
-	src.texture = Fx.tex("tiles")
+	src.texture = Fx.tex("tiles" if th == "" else "tiles_" + th)
 	src.texture_region_size = Vector2i(T, T)
 	for x in 8:
 		src.create_tile(Vector2i(x, 0))
@@ -45,8 +48,14 @@ static func tileset() -> TileSet:
 		for f in 3:
 			src.set_tile_animation_frame_duration(w, f, 0.3)
 	ts.add_source(src, 0)
-	_tileset = ts
+	_tilesets[th] = ts
 	return ts
+
+## 지역 색이 있으면 그 그림을 쓴다 (tree_pine_snow 등)
+func themed(n: String) -> Texture2D:
+	if theme != "" and ResourceLoader.exists("res://assets/sprites/%s_%s.png" % [n, theme]):
+		return Fx.tex(n + "_" + theme)
+	return Fx.tex(n)
 
 static func light_texture() -> Texture2D:
 	if _light_tex:
@@ -67,6 +76,7 @@ static func light_texture() -> Texture2D:
 func build(map_key: String, spawn := Vector2i(-1, -1)) -> void:
 	key = map_key
 	data = Game.maps[map_key]
+	theme = data.get("theme", "")
 	var W: int = data.w
 	var H: int = data.h
 	bounds = Rect2(0, 0, W * T, H * T)
@@ -100,9 +110,13 @@ func build(map_key: String, spawn := Vector2i(-1, -1)) -> void:
 			if m: water.set_cell(c, 0, Vector2i(m, 3))
 			m = Rules.dual_mask(ground, x, y, "S")
 			if m: plaza.set_cell(c, 0, Vector2i(m, 6))
-	# 물은 줄마다 이어 붙인 네모로 막는다
+	# 물은 따로 (층 8): 걷기는 막지만 화살·밧줄·불씨는 넘어간다
 	var walls := StaticBody2D.new()
 	add_child(walls)
+	var waters := StaticBody2D.new()
+	waters.collision_layer = 8
+	waters.collision_mask = 0
+	add_child(waters)
 	for y in H:
 		var x := 0
 		while x < W:
@@ -110,7 +124,7 @@ func build(map_key: String, spawn := Vector2i(-1, -1)) -> void:
 				var x0 := x
 				while x < W and Rules.cell(ground, x, y) == "W":
 					x += 1
-				_rect(walls, Rect2(x0 * T + 3, y * T + 2, (x - x0) * T - 6, T - 4))
+				_rect(waters, Rect2(x0 * T + 3, y * T + 2, (x - x0) * T - 6, T - 4))
 			x += 1
 	# 지도 끝 보이지 않는 벽
 	_rect(walls, Rect2(-T, -T, W * T + 2 * T, T)); _rect(walls, Rect2(-T, H * T, W * T + 2 * T, T))
@@ -145,7 +159,7 @@ func build(map_key: String, spawn := Vector2i(-1, -1)) -> void:
 
 func _layer(off: Vector2, z: int) -> TileMapLayer:
 	var l := TileMapLayer.new()
-	l.tile_set = tileset()
+	l.tile_set = tileset(theme)
 	l.position = off
 	l.z_index = z
 	add_child(l)
@@ -182,12 +196,13 @@ func _object(o: String, x: int, y: int, walls: StaticBody2D, rng: RandomNumberGe
 	if o == "g" or o == "w":
 		var at := AtlasTexture.new()
 		at.atlas = Fx.tex("tiles")
+		at.atlas = Fx.tex("tiles" if theme == "" else "tiles_" + theme)
 		at.region = Rect2((3 if o == "g" else [0, 1, 5][rng.randi_range(0, 2)]) * T, T, T, T)
 		spr.texture = at
 		if o == "w":
 			node.z_index = -10
 	else:
-		spr.texture = Fx.tex(info[0])
+		spr.texture = themed(info[0])
 	spr.centered = true
 	spr.offset = Vector2(0, -spr.texture.get_height() / 2.0 + info[3])
 	if o in "TtMN" and rng.randf() < 0.5:
@@ -205,6 +220,8 @@ func _object(o: String, x: int, y: int, walls: StaticBody2D, rng: RandomNumberGe
 		cs.position = Vector2(0, -sz.y / 2.0)
 		b.add_child(cs)
 		node.add_child(b)
+	if o == "O":
+		node.add_to_group("post")
 	if o == "l":
 		var lt := PointLight2D.new()
 		lt.texture = light_texture()
@@ -298,25 +315,41 @@ func _entity(e: Dictionary, spawn: Vector2i) -> void:
 			n.item = e.item
 			n.position = feet(x, y)
 			ysort.add_child(n)
-		"shard":
+		"shard", "pearl", "ember", "gloom":
 			if not Game.flag(e.id):
-				spawn_pickup("shard", feet(x, y), e.id)
+				spawn_pickup(t, feet(x, y), e.id)
 		"camp":
 			var n := preload("res://scripts/camp.gd").new()
 			n.camp_id = e.id
 			n.kinds = e.kinds
+			n.reward = e.get("reward", "shard")
 			n.position = feet(x, y)
 			add_child(n)
 		"enemy":
 			spawn_enemy(e.kind, feet(x, y))
 		"boss":
-			if not Game.flag("boss_down"):
-				var n := preload("res://scripts/boss.gd").new()
+			var bk: String = e.get("kind", "boar")
+			if not Game.flag(Rules.boss_flag(bk)):
+				var n: Node2D
+				if bk == "serpent":
+					n = preload("res://scripts/serpent.gd").new()
+					n.lake = Rect2(e.lake[0] * T, e.lake[1] * T, e.lake[2] * T, e.lake[3] * T)
+				else:
+					n = preload("res://scripts/boss.gd").new()
+					n.kind = bk
 				n.position = feet(x, y)
 				ysort.add_child(n)
+		"waystone":
+			var n := preload("res://scripts/interact.gd").new()
+			n.position = feet(x, y)
+			n.sprite_name = "waystone"
+			n.solid = Vector2(12, 6)
+			n.action = "travel"
+			ysort.add_child(n)
 		"spring":
 			var n := preload("res://scripts/spring.gd").new()
 			n.position = feet(x, y)
+			n.boss_kind = e.get("boss", "boar")
 			add_child(n)
 		"warp":
 			var a := Area2D.new()
@@ -335,10 +368,10 @@ func _entity(e: Dictionary, spawn: Vector2i) -> void:
 			var need: String = e.get("need", "")
 			a.body_entered.connect(func(body):
 				if body == player:
-					if Rules.can_enter(need, Game.shards):
+					if Rules.can_enter(need, Game.items, Game.flags):
 						get_tree().call_group("main", "go_map", to, Vector2i(tx, ty))
 					else:
-						Game.say("달빛 조각이 모자라다 (%d/%d)" % [Game.shards, Rules.SHARDS_NEEDED])
+						Game.say(_locked_text(need))
 						player.push_back(Vector2(-1, 0) if x > 2 else Vector2(1, 0)))
 
 func walkable_at(p: Vector2) -> bool:
@@ -348,6 +381,15 @@ func walkable_at(p: Vector2) -> bool:
 	if _foot.is_empty():
 		_foot = Rules.footprint_cells(data.entities)
 	return not _foot.has(c) and not Rules.blocks(Rules.cell(data.ground, c.x, c.y), Rules.cell(data.objects, c.x, c.y))
+
+func _locked_text(need: String) -> String:
+	if need == "shards" or need.begins_with("item:"):
+		var it := "shard" if need == "shards" else need.substr(5)
+		var nm := "물건"
+		for c in Rules.CHAPTERS:
+			if Rules.CHAPTERS[c].item == it: nm = Rules.CHAPTERS[c].item_name
+		return "%s이(가) 모자라다 (%d/%d)" % [nm, Game.count(it), Rules.SHARDS_NEEDED]
+	return "아직은 갈 수 없다. 앞의 일을 먼저 마무리하자."
 
 func _door_text(n: String) -> String:
 	match n:
@@ -416,6 +458,19 @@ func _ambient() -> void:
 			p.amount = 18
 		"field":
 			p.color = Color(1.0, 0.8, 0.85)
+		"peak", "cave":
+			p.color = Color(1, 1, 1)
+			p.direction = Vector2(0.3, 1)
+			p.amount = 60
+			p.initial_velocity_min = 14
+			p.initial_velocity_max = 26
+		"ferry", "lake":
+			p.color = Color(0.75, 1.0, 0.6)
+			p.direction = Vector2(0, -1)
+			p.spread = 180
+		"ruins", "throne":
+			p.color = Color(0.75, 0.55, 1.0)
+			p.direction = Vector2(0, -1)
 		_:
 			p.color = Color(0.7, 0.95, 1.0)
 			p.direction = Vector2(0, -1)

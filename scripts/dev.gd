@@ -59,6 +59,34 @@ func _run() -> void:
 	await shot("title")
 	if plan == "title":
 		get_tree().quit(); return
+	if plan == "select":
+		if Game.has_save(): await tap("down")
+		await tap("act"); await wait(0.4)
+		await shot("select_maru")
+		await tap("right"); await wait(0.3); await shot("select_sori")
+		await tap("right"); await wait(0.3); await shot("select_dolsoe")
+		await tap("left"); await wait(0.2)
+		await tap("act"); await wait(1.6)
+		await close_dialogs()
+		print("hero: ", Game.hero, " hp ", Game.max_hp)
+		main().go_map("field", Vector2i(16, 22)); await wait(1.2)
+		var p0 = get_tree().get_first_node_in_group("player")
+		p0.invuln = 9999.0; p0.no_blink = true
+		for e in get_tree().get_nodes_in_group("enemy"): e.queue_free()
+		var w0 = get_tree().get_first_node_in_group("world")
+		var en = w0.spawn_enemy("boar", p0.position + Vector2(90, 0))
+		await wait(0.4)
+		p0.facing = Vector2.RIGHT
+		await tap("act"); await wait(0.08); await shot("bow_shot")
+		await wait(0.3)
+		_send("act", true); await wait(0.7); await shot("bow_charge"); _send("act", false); await wait(0.06); await shot("bow_pierce")
+		await wait(0.5)
+		print("boar hp after arrows: ", en.hp if is_instance_valid(en) else "dead")
+		await tap("item"); await wait(0.15); await shot("rope_throw")
+		await wait(0.5); await shot("rope_after")
+		get_tree().quit(); return
+	if plan in ["club"]:
+		Game.hero = "dolsoe"
 	main().start(false)
 	await wait(1.4)
 	await shot("intro_dialog")
@@ -147,6 +175,62 @@ func _run() -> void:
 					p.position = n.position + Vector2(0, 16); p.facing = Vector2.UP
 			await tap("act"); await wait(1.0); await shot("full_thanks"); await close_dialogs()
 			print("thanked: ", Game.flag("thanked"))
+		"club":
+			main().go_map("field", Vector2i(16, 22)); await wait(1.2)
+			var p = get_tree().get_first_node_in_group("player")
+			p.invuln = 9999.0; p.no_blink = true
+			for e in get_tree().get_nodes_in_group("enemy"): e.queue_free()
+			var w = get_tree().get_first_node_in_group("world")
+			var en = w.spawn_enemy("mushroom", p.position + Vector2(22, 0))
+			var en2 = w.spawn_enemy("mushroom", p.position + Vector2(-26, 10))
+			await wait(0.3); p.facing = Vector2.RIGHT
+			await tap("act"); await wait(0.12); await shot("club_swing")
+			await wait(0.4)
+			_send("act", true); await wait(0.7); _send("act", false); await wait(0.08); await shot("club_slam")
+			print("club: ", en.hp if is_instance_valid(en) else "dead", " ", en2.hp if is_instance_valid(en2) else "dead")
+		"rope":
+			main().go_map("ferry", Vector2i(17, 18)); await wait(1.2)
+			for e in get_tree().get_nodes_in_group("enemy"): e.queue_free()
+			var p = get_tree().get_first_node_in_group("player")
+			p.no_blink = true
+			p.position = Vector2(17 * 16 + 8, 18 * 16 + 14)
+			for i in 4:
+				p.facing = Vector2.RIGHT
+				await tap("item"); await wait(0.1)
+				if i == 1: await shot("rope_fly")
+				await wait(0.9)
+				print("rope ", i, " x tile ", int(p.position.x / 16), " state ", p.state)
+			await shot("rope_cross")
+		"chapters":
+			var p = get_tree().get_first_node_in_group("player")
+			Game.set_flag("boss_down"); Game.items = {"shard": 3, "pearl": 3, "ember": 3, "gloom": 3}
+			for mk in [["ferry", Vector2i(8, 18)], ["lake", Vector2i(3, 13)], ["peak", Vector2i(8, 30)], ["cave", Vector2i(4, 12)], ["ruins", Vector2i(8, 20)], ["throne", Vector2i(5, 13)]]:
+				main().go_map(mk[0], mk[1]); await wait(1.3)
+				p = get_tree().get_first_node_in_group("player"); p.invuln = 9999.0; p.no_blink = true
+				await shot("map_" + mk[0])
+				var b = get_tree().get_first_node_in_group("boss")
+				if b:
+					var c: Vector2 = b.lake.get_center() if b.get("kind") == "serpent" else b.position
+					p.position = c + Vector2(-100 if b.get("kind") != "serpent" else -150, 0)
+					await wait(2.6)
+					await shot("boss_" + mk[0])
+					if b.get("kind") == "serpent":
+						while b.state != "rise" and b.state != "spit":
+							await wait(0.1)
+						p.position = b.position + Vector2(-70, 0)
+						p.facing = Vector2.RIGHT
+						var w = get_tree().get_first_node_in_group("world")
+						await tap("item"); await wait(0.5)
+						print("serpent state after rope: ", b.state)
+						await shot("serpent_beached")
+					await wait(2.0)
+					await shot("boss2_" + mk[0])
+					b.hurt_cd = 0
+					b.take_hit(999, p.global_position)
+					await wait(4.2)
+					await shot("end_" + mk[0])
+					await close_dialogs()
+					print(mk[0], " boss ", b.kind, " flag ", Game.flag(Rules.boss_flag(b.kind)))
 		"bridge":
 			main().go_map("field", Vector2i(23, 33))
 			await wait(1.2)

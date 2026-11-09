@@ -2,6 +2,7 @@ extends Area2D
 ## 도깨비불이 쏘는 불씨.
 
 var dir := Vector2.RIGHT
+var tex_name := "fireball"
 var speed := 72.0
 var life := 3.0
 var spr: Sprite2D
@@ -16,12 +17,12 @@ func _ready() -> void:
 	cs.shape = sh
 	add_child(cs)
 	spr = Sprite2D.new()
-	spr.texture = Fx.tex("fireball")
+	spr.texture = Fx.tex(tex_name)
 	spr.hframes = 2
 	add_child(spr)
 	var lt := PointLight2D.new()
 	lt.texture = preload("res://scripts/world.gd").light_texture()
-	lt.color = Color(0.5, 1, 1)
+	lt.color = {"fireball": Color(0.5, 1, 1), "waterball": Color(0.4, 0.7, 1), "snowball": Color(0.9, 0.95, 1), "darkball": Color(0.7, 0.4, 1)}.get(tex_name, Color.WHITE)
 	lt.energy = 0.5
 	lt.texture_scale = 0.35
 	add_child(lt)

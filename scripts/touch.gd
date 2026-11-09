@@ -5,7 +5,7 @@ var enabled := false
 var stick_id := -1
 var stick_origin := Vector2.ZERO
 var stick_pos := Vector2.ZERO
-var buttons := {"act": Vector2(352, 176), "roll": Vector2(322, 196), "item": Vector2(356, 140)}
+var buttons := {"act": Vector2(352, 176), "roll": Vector2(322, 196), "item": Vector2(356, 142), "herb": Vector2(322, 162)}
 var held := {}
 
 func _ready() -> void:
@@ -63,7 +63,7 @@ func _draw() -> void:
 	if stick_id != -1:
 		draw_circle(stick_origin, 20, Color(1, 1, 1, 0.15))
 		draw_circle(stick_origin + (stick_pos - stick_origin).limit_length(20), 8, Color(1, 1, 1, 0.35))
-	var names := {"act": "공격", "roll": "구르기", "item": "약초"}
+	var names := {"act": "공격", "roll": "구르기", "item": "밧줄", "herb": "약초"}
 	for a in buttons:
 		var on: bool = a in held.values()
 		draw_circle(buttons[a], 13, Color(1, 1, 1, 0.35 if on else 0.18))

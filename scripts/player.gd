@@ -1,7 +1,7 @@
 extends CharacterBody2D
-## 주인공 마루: 8방향 이동, 목검 2연타, 구르기(무적), 말 걸기.
+## 주인공 (마루·소리·돌쇠): 8방향 이동, 무기 공격, 구르기(무적), 갈고리 밧줄, 말 걸기.
 
-const SPEED := 82.0
+var SPEED := 82.0
 const ACCEL := 1100.0
 const ROLL_SPEED := 200.0
 const ROLL_TIME := 0.24
@@ -23,11 +23,18 @@ var knock := Vector2.ZERO
 var shake_amt := 0.0
 var step_t := 0.0
 var no_blink := false  # 개발용 화면 찍기
+var weapon := "sword"
+var hold_t := 0.0
+var holding := false
+var fire_cd := 0.0
+var rope: Node2D
+var zip_to := Vector2.ZERO
+var charge_fx: Node2D
 
 func _ready() -> void:
 	add_to_group("player")
 	collision_layer = 2
-	collision_mask = 1
+	collision_mask = 1 | 8
 	motion_mode = CharacterBody2D.MOTION_MODE_FLOATING
 	var cs := CollisionShape2D.new()
 	var sh := CapsuleShape2D.new()
@@ -40,7 +47,10 @@ func _ready() -> void:
 	add_child(cs)
 	add_child(Fx.shadow(11, 4))
 	spr = Sprite2D.new()
-	spr.texture = Fx.tex("hero")
+	var h := Rules.hero(Game.hero)
+	weapon = h.weapon
+	SPEED = h.speed
+	spr.texture = Fx.tex("hero" if Game.hero == "maru" else "hero_" + Game.hero)
 	spr.hframes = 8
 	spr.vframes = 3
 	spr.offset = Vector2(0, -10)
@@ -56,6 +66,7 @@ func _physics_process(delta: float) -> void:
 	st += delta
 	invuln = maxf(0.0, invuln - delta)
 	roll_cd = maxf(0.0, roll_cd - delta)
+	fire_cd = maxf(0.0, fire_cd - delta)
 	if Game.busy:
 		velocity = velocity.move_toward(Vector2.ZERO, ACCEL * delta)
 		_set_frame(0)
@@ -76,19 +87,33 @@ func _physics_process(delta: float) -> void:
 				velocity = velocity.move_toward(Vector2.ZERO, ACCEL * delta)
 				anim = 0
 			_set_frame(int(anim) % 4 if d.length() > 0.1 else 0)
-			if Input.is_action_just_pressed("act"):
+			if holding:
+				_hold_update(delta, d)
+			elif Input.is_action_just_pressed("act"):
 				if not _try_interact():
-					_start_attack(0)
+					if weapon == "sword":
+						_start_attack(0)
+					elif fire_cd <= 0:
+						holding = true
+						hold_t = 0.0
 			elif Input.is_action_just_pressed("roll") and roll_cd <= 0:
 				_start_roll(d if d.length() > 0.1 else facing)
 			elif Input.is_action_just_pressed("item"):
+				_fire_rope()
+			elif Input.is_action_just_pressed("herb"):
 				_use_herb()
 		"attack":
+			var at := ATTACK_TIME * (1.45 if weapon == "club" else 1.0)
 			velocity = velocity.move_toward(facing * 18.0, ACCEL * delta)
-			_set_frame(4 if st < ATTACK_TIME * 0.45 else 5)
-			if not hit_done and st > 0.04:
+			_set_frame(4 if st < at * 0.45 else 5)
+			if not hit_done and st > (0.1 if weapon == "club" else 0.04):
 				hit_done = true
 				_do_hit()
+			if weapon == "club":
+				if st >= at:
+					state = "move"
+				move_and_slide()
+				return
 			if Input.is_action_just_pressed("act"):
 				queued = true
 			if st >= ATTACK_TIME:
@@ -111,6 +136,17 @@ func _physics_process(delta: float) -> void:
 			_set_frame(7)
 			if st > 0.25:
 				state = "move"
+		"zip":
+			# 밧줄을 따라 날아감 (물 위도 지나감)
+			var to := zip_to - position
+			velocity = to.normalized() * 260.0
+			spr.frame = Rules.facing_row(facing) * 8 + 6
+			if to.length() < 6 or st > 1.2:
+				position = zip_to
+				velocity = Vector2.ZERO
+				collision_mask = 1 | 8
+				state = "move"
+				Fx.anim(get_parent(), "dust", 4, position, 14, -1)
 		"dead":
 			velocity = Vector2.ZERO
 	move_and_slide()
@@ -137,6 +173,7 @@ func _start_attack(n: int) -> void:
 	s.dir = _snap(facing)
 	s.reverse = n == 1
 	s.big = Game.sword > 0
+	s.kind = weapon
 	s.position = Vector2(0, -8)
 	add_child(s)
 
@@ -147,18 +184,94 @@ func _snap(v: Vector2) -> Vector2:
 
 func _do_hit() -> void:
 	var center := global_position + Vector2(0, -6) + _snap(facing) * 12.0
-	var reach := 15.0 + (3.0 if Game.sword > 0 else 0.0)
+	var reach := 15.0 + (3.0 if Game.sword > 0 else 0.0) + (5.0 if weapon == "club" else 0.0)
 	var hit_any := false
 	for n in get_tree().get_nodes_in_group("hittable"):
 		if not is_instance_valid(n) or not n.has_method("take_hit"):
 			continue
 		var p: Vector2 = n.global_position + Vector2(0, -6)
 		if p.distance_to(center) < reach + n.get("hit_radius"):
-			n.take_hit(Rules.sword_damage(Game.sword) + (1 if combo == 1 else 0), global_position)
+			n.take_hit(Rules.weapon_damage(weapon, Game.sword, false, combo), global_position)
+			if weapon == "club" and n.has_method("knock_extra"):
+				n.knock_extra(global_position)
 			hit_any = true
 	if hit_any:
 		Fx.hitstop(self, 0.045)
 		shake_amt = maxf(shake_amt, 1.5)
+
+## 활·방망이: 누르고 있으면 힘을 모은다
+func _hold_update(delta: float, d: Vector2) -> void:
+	hold_t += delta
+	velocity = velocity.move_toward(d * SPEED * 0.4, ACCEL * delta)
+	_set_frame(4)
+	if hold_t > 0.5 and charge_fx == null:
+		charge_fx = Fx.anim(self, "spark", 4, Vector2(0, -10), 10, 6)
+		Sound.play("select", 0.0, -6)
+	if not Input.is_action_pressed("act"):
+		holding = false
+		var charged := hold_t > 0.5
+		charge_fx = null
+		if weapon == "bow":
+			_shoot(charged)
+		elif charged:
+			_slam()
+		else:
+			_start_attack(0)
+
+func _shoot(charged: bool) -> void:
+	fire_cd = 0.28
+	state = "attack"
+	st = ATTACK_TIME * 0.5
+	hit_done = true
+	combo = 1
+	queued = false
+	var a := preload("res://scripts/arrow.gd").new()
+	a.dir = _snap(facing)
+	a.pierce = charged
+	a.damage = Rules.weapon_damage("bow", Game.sword, charged)
+	a.position = position + Vector2(0, -8) + a.dir * 6
+	get_parent().add_child(a)
+	Sound.play("swing", 0.05, 2.0 if charged else 0.0)
+	velocity = -a.dir * 30
+
+func _slam() -> void:
+	state = "attack"
+	st = ATTACK_TIME * 0.6
+	hit_done = true
+	combo = 0
+	Sound.play("stomp", 0.05)
+	Game.shake.emit(4.0)
+	shake_amt = 4.0
+	var ring := preload("res://scripts/boss.gd").Ring.new()
+	ring.position = position
+	ring.life = 0.3
+	ring.max_r = 40.0
+	ring.z_index = 2
+	get_parent().add_child(ring)
+	for i in 8:
+		Fx.anim(get_parent(), "dust", 4, position + Vector2.from_angle(TAU * i / 8) * 14, 12, -1)
+	for n in get_tree().get_nodes_in_group("hittable"):
+		if is_instance_valid(n) and n.global_position.distance_to(global_position) < 40.0 + n.get("hit_radius"):
+			n.take_hit(Rules.weapon_damage("club", Game.sword, true), global_position)
+	Fx.hitstop(self, 0.06)
+
+func _fire_rope() -> void:
+	if rope and is_instance_valid(rope):
+		return
+	rope = preload("res://scripts/rope.gd").new()
+	rope.owner_player = self
+	rope.dir = _snap(facing)
+	get_parent().add_child(rope)
+	Sound.play("swing", 0.1, -4)
+
+## 밧줄이 말뚝에 걸리면 불림
+func zip(target: Vector2) -> void:
+	state = "zip"
+	st = 0.0
+	zip_to = target
+	collision_mask = 0
+	invuln = maxf(invuln, 0.3)
+	Sound.play("roll", 0.0)
 
 func _start_roll(d: Vector2) -> void:
 	state = "roll"
@@ -173,7 +286,7 @@ func _start_roll(d: Vector2) -> void:
 
 func _use_herb() -> void:
 	if Game.herbs <= 0:
-		Game.say("약초가 없다. (대장간 옆 쇠돌 아저씨에게 살 수 있다)")
+		Game.say("약초가 없다. (마을 대장간에서 살 수 있다)")
 		return
 	if Game.hp >= Game.max_hp:
 		Game.say("지금은 기운이 넘친다.")
@@ -185,6 +298,7 @@ func _use_herb() -> void:
 
 func _try_interact() -> bool:
 	var probe := global_position + facing * 12.0
+	if holding: return false
 	var best: Node2D = null
 	var bd := 1e9
 	for n in get_tree().get_nodes_in_group("interact"):
@@ -198,10 +312,10 @@ func _try_interact() -> bool:
 	return false
 
 func is_rolling() -> bool:
-	return state == "roll"
+	return state == "roll" or state == "zip"
 
 func hurt(dmg: int, from: Vector2) -> void:
-	if invuln > 0 or state == "dead" or Game.busy:
+	if invuln > 0 or state == "dead" or state == "zip" or Game.busy:
 		return
 	Game.hurt(dmg)
 	Sound.play("hurt", 0.05)

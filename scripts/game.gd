@@ -11,8 +11,12 @@ var hp := 6
 var max_hp := 6
 var coins := 0
 var sword := 0
-var shards := 0
+var items := {}       # 장마다 모으는 물건 셋: shard / pearl / ember / gloom
+var shards: int:
+	get: return int(items.get("shard", 0))
+	set(v): items["shard"] = v
 var herbs := 0
+var hero := "maru"
 var flags := {}
 var map_key := "village"
 var busy := false   # 대화 중이면 움직이지 않음
@@ -28,7 +32,7 @@ func _ready() -> void:
 	maps = JSON.parse_string(FileAccess.get_file_as_string("res://data/maps.json"))
 
 func reset() -> void:
-	hp = 6; max_hp = 6; coins = 0; sword = 0; shards = 0; herbs = 0
+	max_hp = int(Rules.hero(hero).hp); hp = max_hp; coins = 0; sword = 0; items = {}; herbs = 1
 	flags = {}; map_key = "village"; busy = false
 	changed.emit()
 
@@ -38,6 +42,13 @@ func flag(k: String) -> bool:
 func set_flag(k: String, v := true) -> void:
 	flags[k] = v
 	changed.emit()
+
+func add_item(item: String, n := 1) -> void:
+	items[item] = int(items.get(item, 0)) + n
+	changed.emit()
+
+func count(item: String) -> int:
+	return int(items.get(item, 0))
 
 func add_coins(n: int) -> void:
 	coins += n
@@ -61,8 +72,8 @@ func save() -> void:
 	var f := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
 	if f == null:
 		return
-	f.store_string(JSON.stringify({"hp": hp, "max_hp": max_hp, "coins": coins, "sword": sword, "shards": shards,
-		"herbs": herbs, "flags": flags, "map": map_key}))
+	f.store_string(JSON.stringify({"hp": hp, "max_hp": max_hp, "coins": coins, "sword": sword, "items": items,
+		"herbs": herbs, "flags": flags, "map": map_key, "hero": hero}))
 
 func load_save() -> bool:
 	if not has_save():
@@ -71,7 +82,9 @@ func load_save() -> bool:
 	if typeof(d) != TYPE_DICTIONARY:
 		return false
 	max_hp = int(d.get("max_hp", 6)); hp = max_hp
-	coins = int(d.get("coins", 0)); sword = int(d.get("sword", 0)); shards = int(d.get("shards", 0))
+	coins = int(d.get("coins", 0)); sword = int(d.get("sword", 0))
+	items = d.get("items", {"shard": int(d.get("shards", 0))})
+	hero = str(d.get("hero", "maru"))
 	herbs = int(d.get("herbs", 0)); flags = d.get("flags", {}); map_key = str(d.get("map", "village"))
 	if not maps.has(map_key):
 		map_key = "village"
@@ -103,7 +116,8 @@ func _setup_input() -> void:
 	_add_key("down", [KEY_DOWN, KEY_S], [JOY_BUTTON_DPAD_DOWN]); _add_axis("down", JOY_AXIS_LEFT_Y, 1)
 	_add_key("act", [KEY_Z, KEY_J, KEY_ENTER], [JOY_BUTTON_A])
 	_add_key("roll", [KEY_X, KEY_K, KEY_SPACE], [JOY_BUTTON_B])
-	_add_key("item", [KEY_C, KEY_L], [JOY_BUTTON_Y])
+	_add_key("item", [KEY_C, KEY_L], [JOY_BUTTON_Y])   # 갈고리 밧줄
+	_add_key("herb", [KEY_V, KEY_SEMICOLON], [JOY_BUTTON_X])
 	_add_key("pause", [KEY_ESCAPE, KEY_P], [JOY_BUTTON_START])
 
 func _pixel_font(path: String) -> Font:

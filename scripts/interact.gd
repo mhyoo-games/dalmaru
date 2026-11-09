@@ -5,6 +5,7 @@ var lines: Array = []
 var radius := 14.0
 var sprite_name := ""
 var solid := Vector2.ZERO
+var action := ""
 
 func _ready() -> void:
 	add_to_group("interact")
@@ -24,4 +25,7 @@ func _ready() -> void:
 		add_child(b)
 
 func interact(_p: Node) -> void:
+	if action == "travel":
+		Dialogs.travel(get_tree())
+		return
 	get_tree().call_group("main", "dialog", lines)

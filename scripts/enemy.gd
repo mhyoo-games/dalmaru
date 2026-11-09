@@ -4,10 +4,16 @@ extends CharacterBody2D
 signal died
 
 const INFO := {
-	"mushroom": {"hp": 2, "tex": "mushroom", "frames": 4, "off": -9, "r": 6.0, "dmg": 1, "name": "버섯돌이"},
-	"wisp": {"hp": 2, "tex": "wisp", "frames": 4, "off": -14, "r": 6.0, "dmg": 1, "name": "도깨비불"},
-	"boar": {"hp": 5, "tex": "boar", "frames": 4, "off": -11, "r": 9.0, "dmg": 2, "name": "멧돼지"},
+	"mushroom": {"hp": 2, "tex": "mushroom", "frames": 4, "off": -9, "r": 6.0, "dmg": 1, "ai": "hop"},
+	"wisp": {"hp": 2, "tex": "wisp", "frames": 4, "off": -14, "r": 6.0, "dmg": 1, "ai": "float", "shot": "fireball"},
+	"boar": {"hp": 5, "tex": "boar", "frames": 4, "off": -11, "r": 9.0, "dmg": 2, "ai": "charge"},
+	"toad": {"hp": 3, "tex": "toad", "frames": 4, "off": -8, "r": 6.0, "dmg": 1, "ai": "hop", "shot": "waterball"},
+	"frostblob": {"hp": 3, "tex": "frostblob", "frames": 4, "off": -8, "r": 6.0, "dmg": 1, "ai": "hop"},
+	"snowimp": {"hp": 3, "tex": "snowimp", "frames": 4, "off": -10, "r": 6.0, "dmg": 1, "ai": "float", "shot": "snowball"},
+	"shade": {"hp": 4, "tex": "shade", "frames": 4, "off": -11, "r": 7.0, "dmg": 2, "ai": "charge", "blink": true},
 }
+
+var pulled_by_rope := false
 
 var kind := "mushroom"
 var hp := 2
@@ -28,21 +34,22 @@ var spawning := 0.35
 func _ready() -> void:
 	add_to_group("hittable")
 	add_to_group("enemy")
+	add_to_group("hookable")
 	var info: Dictionary = INFO[kind]
 	hp = info.hp
 	hit_radius = info.r
 	home = position
 	wander_to = position
 	collision_layer = 4
-	collision_mask = 1
+	collision_mask = 1 | 8
 	motion_mode = CharacterBody2D.MOTION_MODE_FLOATING
 	var cs := CollisionShape2D.new()
 	var sh := CircleShape2D.new()
-	sh.radius = 5.0 if kind != "boar" else 7.0
+	sh.radius = 7.0 if INFO[kind].ai == "charge" else 5.0
 	cs.shape = sh
 	cs.position = Vector2(0, -3)
 	add_child(cs)
-	add_child(Fx.shadow(12 if kind != "boar" else 22, 4))
+	add_child(Fx.shadow(22 if kind == "boar" else 12, 4))
 	spr = Sprite2D.new()
 	spr.texture = Fx.tex(info.tex)
 	spr.hframes = info.frames
@@ -67,6 +74,16 @@ func _physics_process(delta: float) -> void:
 		return
 	var to_p: Vector2 = p.global_position - global_position
 	var dist := to_p.length()
+	if state == "hooked":
+		velocity = Vector2.ZERO
+		return
+	if state == "dizzy":
+		velocity = Vector2.ZERO
+		spr.rotation = sin(st * 18) * 0.15
+		if st > 1.4:
+			spr.rotation = 0
+			state = "idle"; st = 0.0
+		return
 	if state == "hurt":
 		velocity = knock
 		knock = knock.move_toward(Vector2.ZERO, 700 * delta)
@@ -74,10 +91,10 @@ func _physics_process(delta: float) -> void:
 			state = "idle"; st = 0.0
 		move_and_slide()
 		return
-	match kind:
-		"mushroom": _mushroom(delta, to_p, dist)
-		"wisp": _wisp(delta, to_p, dist)
-		"boar": _boar(delta, to_p, dist)
+	match INFO[kind].ai:
+		"hop": _mushroom(delta, to_p, dist)
+		"float": _wisp(delta, to_p, dist)
+		"charge": _boar(delta, to_p, dist)
 	move_and_slide()
 	# 몸에 닿으면 다침
 	if spawning <= 0 and dist < hit_radius + 6 and not p.is_rolling():
@@ -88,7 +105,11 @@ func _mushroom(delta: float, to_p: Vector2, dist: float) -> void:
 		"idle":
 			velocity = velocity.move_toward(Vector2.ZERO, 600 * delta)
 			spr.frame = int(t * 3) % 2
-			if st > (0.5 if dist < 100 else 1.4):
+			if st > (0.5 if dist < 100 else 1.4) * (1.4 if kind == "frostblob" else 1.0):
+				if kind == "toad" and dist < 110 and randf() < 0.4:
+					st = 0.0
+					_fire(to_p.normalized())
+					return
 				state = "crouch"; st = 0.0
 		"crouch":
 			spr.frame = 2
@@ -99,15 +120,15 @@ func _mushroom(delta: float, to_p: Vector2, dist: float) -> void:
 				Sound.play("hop", 0.2, -10)
 		"hop":
 			spr.frame = 3
-			spr.offset.y = INFO.mushroom.off - sin(st / 0.32 * PI) * 6
+			spr.offset.y = INFO[kind].off - sin(st / 0.32 * PI) * 6
 			if st > 0.32:
-				spr.offset.y = INFO.mushroom.off
+				spr.offset.y = INFO[kind].off
 				state = "idle"; st = 0.0
 				Fx.anim(get_parent(), "dust", 4, position, 14, -1)
 
 func _wisp(delta: float, to_p: Vector2, dist: float) -> void:
 	spr.frame = int(t * 8) % 4
-	spr.offset.y = INFO.wisp.off + sin(t * 3.0) * 2.5
+	spr.offset.y = INFO[kind].off + sin(t * 3.0) * 2.5
 	var want := Vector2.ZERO
 	if dist < 130:
 		# 60~80 거리를 유지하며 빙글빙글
@@ -132,6 +153,7 @@ func _fire(dir: Vector2) -> void:
 		mat.set_shader_parameter("flash", 0.0)
 		if not is_inside_tree(): return
 		var b := preload("res://scripts/projectile.gd").new()
+		b.tex_name = INFO[kind].get("shot", "fireball")
 		b.dir = dir
 		b.position = position + Vector2(0, -12)
 		get_parent().add_child(b)
@@ -145,22 +167,29 @@ func _boar(delta: float, to_p: Vector2, dist: float) -> void:
 				wander_to = home + Vector2.from_angle(randf() * TAU) * randf_range(10, 40)
 				st = 0.0
 			velocity = velocity.move_toward((wander_to - position).normalized() * 24, 300 * delta)
-			if absf(velocity.x) > 2: spr.flip_h = velocity.x < 0
+			if absf(velocity.x) > 2 and kind == "boar": spr.flip_h = velocity.x < 0
 			if dist < 110 and st > 0.6:
 				state = "aim"; st = 0.0
 				Sound.play("roar", 0.15, -14)
 		"aim":
 			velocity = Vector2.ZERO
 			spr.flip_h = to_p.x < 0
-			spr.frame = 2
+			spr.frame = 2 if kind == "boar" else int(t * 10) % 4
 			spr.position.x = sin(st * 60) * 1.2
+			if INFO[kind].get("blink", false) and st < delta * 1.5:
+				# 그림자처럼 사라졌다가 옆에서 나타남
+				Fx.anim(get_parent(), "puff", 5, position + Vector2(0, -8), 18, 6)
+				var w = get_tree().get_first_node_in_group("world")
+				var tgt: Vector2 = get_tree().get_first_node_in_group("player").global_position + Vector2.from_angle(randf() * TAU) * 56
+				if w and w.walkable_at(tgt): position = tgt
+				to_p = get_tree().get_first_node_in_group("player").global_position - global_position
 			charge_dir = to_p.normalized()
 			if st > 0.55:
 				spr.position.x = 0
 				state = "charge"; st = 0.0
 		"charge":
-			spr.frame = 2 + int(t * 12) % 2
-			velocity = charge_dir * 175
+			spr.frame = (2 + int(t * 12) % 2) if kind == "boar" else int(t * 14) % 4
+			velocity = charge_dir * (175.0 if kind == "boar" else 150.0)
 			if int(st * 20) % 2 == 0:
 				Fx.anim(get_parent(), "dust", 4, position, 14, -1)
 			if get_slide_collision_count() > 0 and st > 0.1:
@@ -177,11 +206,27 @@ func _boar(delta: float, to_p: Vector2, dist: float) -> void:
 				spr.rotation = 0
 				state = "idle"; st = 0.0
 
+## 밧줄에 걸림: 끌려와서 어지러워함
+func hooked(_p: Node) -> void:
+	state = "hooked"; st = 0.0
+	pulled_by_rope = true
+	spr.position.x = 0
+
+func released() -> void:
+	pulled_by_rope = false
+	if hp > 0:
+		state = "dizzy"; st = 0.0
+		Fx.number(get_parent(), position, "어질", Color(0.7, 0.9, 1))
+
+func knock_extra(from: Vector2) -> void:
+	if hp > 0 and state == "hurt":
+		knock *= 1.8
+
 func take_hit(dmg: int, from: Vector2) -> void:
 	if hp <= 0:
 		return
 	hp -= dmg
-	var bonus := state == "stun"
+	var bonus := state == "stun" or state == "dizzy"
 	if bonus:
 		hp -= 1
 	Sound.play("hit", 0.1)
@@ -209,6 +254,7 @@ func _die() -> void:
 	died.emit()
 	set_physics_process(false)
 	remove_from_group("hittable")
+	remove_from_group("hookable")
 	var tw := create_tween()
 	tw.tween_property(spr, "scale", Vector2(1.4, 0.2), 0.12)
 	tw.tween_callback(queue_free)

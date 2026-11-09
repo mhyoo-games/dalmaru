@@ -1,8 +1,15 @@
 extends CharacterBody2D
-## 숲지기 대왕멧돼지. 돌진(벽에 박으면 휘청) · 뛰어올라 내리찍기(충격파) · 버섯돌이 부르기.
+## 장마다 대왕: 숲지기 대왕멧돼지(boar) · 서리곰(bear) · 달그림자 도깨비왕(king)
+## 돌진(벽에 박으면 휘청) · 뛰어올라 내리찍기(충격파) · 부하 부르기 · (곰·왕) 부채꼴로 쏘기
 
-const MAX_HP := 26
+const KINDS := {
+	"boar": {"hp": 26, "tex": "boss", "off": -19, "name": "숲지기 대왕멧돼지", "minion": "mushroom", "shot": "", "speed": 1.0},
+	"bear": {"hp": 34, "tex": "bear", "off": -22, "name": "서리봉 서리곰", "minion": "frostblob", "shot": "snowball", "speed": 0.95},
+	"king": {"hp": 44, "tex": "king", "off": -26, "name": "달그림자 도깨비왕", "minion": "shade", "shot": "darkball", "speed": 1.1},
+}
 
+var kind := "boar"
+var MAX_HP := 26
 var hp := MAX_HP
 var hit_radius := 14.0
 var spr: Sprite2D
@@ -22,12 +29,13 @@ var home := Vector2.ZERO
 
 class Ring extends Node2D:
 	var r := 0.0
+	var max_r := 100.0
 	var life := 0.55
 	var t := 0.0
 	var hit := false
 	func _process(d: float) -> void:
 		t += d
-		r = 100.0 * (t / life)
+		r = max_r * (t / life)
 		if t > life: queue_free()
 		queue_redraw()
 	func _draw() -> void:
@@ -39,6 +47,8 @@ func _ready() -> void:
 	add_to_group("hittable")
 	add_to_group("boss")
 	home = position
+	MAX_HP = KINDS[kind].hp
+	hp = MAX_HP
 	collision_layer = 4
 	collision_mask = 1
 	motion_mode = CharacterBody2D.MOTION_MODE_FLOATING
@@ -53,9 +63,9 @@ func _ready() -> void:
 	shadow = Fx.shadow(40, 8)
 	add_child(shadow)
 	spr = Sprite2D.new()
-	spr.texture = Fx.tex("boss")
+	spr.texture = Fx.tex(KINDS[kind].tex)
 	spr.hframes = 4
-	spr.offset = Vector2(0, -19)
+	spr.offset = Vector2(0, KINDS[kind].off)
 	spr.flip_h = true
 	mat = Fx.flash_material()
 	spr.material = mat
@@ -76,7 +86,7 @@ func _physics_process(delta: float) -> void:
 	if p == null:
 		return
 	var to_p: Vector2 = p.global_position - global_position
-	var fast := 1.0 if hp > MAX_HP / 2 else 1.3
+	var fast: float = (1.0 if hp > MAX_HP / 2 else 1.3) * KINDS[kind].speed
 	match state:
 		"sleep":
 			spr.frame = 0
@@ -100,7 +110,9 @@ func _physics_process(delta: float) -> void:
 			spr.flip_h = to_p.x < 0
 			if st > 0.7 / fast:
 				pattern += 1
-				if hp <= MAX_HP / 2 and pattern % 4 == 0:
+				if KINDS[kind].shot != "" and pattern % 4 == 2:
+					_go("fan")
+				elif hp <= MAX_HP / 2 and pattern % 4 == 0:
 					_go("summon")
 				elif pattern % 3 == 0:
 					_go("leap_up")
@@ -114,8 +126,33 @@ func _physics_process(delta: float) -> void:
 				else:
 					charges = 2 if hp <= MAX_HP / 2 else 1
 					_go("aim")
+		"fan":
+			# 일어섰다가 내리치며 부채꼴로 쏜다
+			velocity = Vector2.ZERO
+			spr.frame = 2 if st < 0.6 else 3
+			spr.flip_h = to_p.x < 0
+			if st > 0.6 and st - delta <= 0.6:
+				Game.shake.emit(4.0)
+				Sound.play("stomp", 0.0, -2)
+				var n := 7 if kind == "bear" else 10
+				for i in n:
+					var b := preload("res://scripts/projectile.gd").new()
+					b.tex_name = KINDS[kind].shot
+					b.dir = to_p.normalized().rotated((i - (n - 1) / 2.0) * (0.22 if kind == "bear" else TAU / n))
+					b.speed = 85.0
+					b.position = position + Vector2(0, -14)
+					get_parent().add_child(b)
+			if st > 1.2:
+				_go("think")
 		"aim":
 			velocity = Vector2.ZERO
+			if kind == "king" and st < delta * 1.5:
+				Fx.anim(get_parent(), "puff", 5, position + Vector2(0, -16), 18, 6)
+				var w = get_tree().get_first_node_in_group("world")
+				var tgt: Vector2 = p.global_position + Vector2.from_angle(randf() * TAU) * 80
+				if w and w.walkable_at(tgt) and w.walkable_at(tgt + Vector2(20, 0)) and w.walkable_at(tgt - Vector2(20, 0)):
+					position = tgt
+					to_p = p.global_position - global_position
 			spr.flip_h = to_p.x < 0
 			spr.frame = 2
 			spr.position.x = sin(st * 70) * 1.5
@@ -125,7 +162,7 @@ func _physics_process(delta: float) -> void:
 				Sound.play("roar", 0.2, -10)
 				_go("charge")
 		"charge":
-			spr.frame = 2 + int(t * 14) % 2
+			spr.frame = (2 + int(t * 14) % 2) if kind == "boar" else int(t * 10) % 2
 			velocity = dir * 215 * fast
 			if int(st * 30) % 2 == 0:
 				Fx.anim(get_parent(), "dust", 4, position + Vector2(randf_range(-10, 10), 0), 14, -1)
@@ -176,7 +213,7 @@ func _physics_process(delta: float) -> void:
 				var w = get_tree().get_first_node_in_group("world")
 				Sound.play("roar", 0.2, -6)
 				for i in 2:
-					w.spawn_enemy("mushroom", position + Vector2(-30 + i * 60, 24))
+					w.spawn_enemy(KINDS[kind].minion, position + Vector2(-30 + i * 60, 24))
 				_go("think")
 		"dying":
 			velocity = Vector2.ZERO

@@ -1,14 +1,14 @@
 """지도를 코드로 짓는다 → data/maps.json
 땅(ground): . 풀  P 흙길  S 돌바닥  W 물  D 물 위 나무다리
 소품(objects): T 둥근나무 t 둥근나무2 M 단풍 N 소나무 r 바위 R 큰바위 b 덤불(벨 수 있음) B 열매덤불
-               g 긴풀(벨 수 있음) w 꽃무더기 f 울타리 F 울타리기둥 v 세로울타리 l 석등 j 항아리 J 붉은항아리 c 상자 # 막힘
+               g 긴풀(벨 수 있음) w 꽃무더기 O 갈고리 말뚝 Y Z 장승 I 돌기둥 f 울타리 F 울타리기둥 v 세로울타리 l 석등 j 항아리 J 붉은항아리 c 상자 # 막힘
 python3 tools/maps/gen.py
 """
 import json, math, os, random
 
 class Map:
-    def __init__(self, key, name, w, h, music, tint=(1, 1, 1), seed=1):
-        self.key, self.name, self.w, self.h, self.music, self.tint = key, name, w, h, music, tint
+    def __init__(self, key, name, w, h, music, tint=(1, 1, 1), seed=1, theme=''):
+        self.key, self.name, self.w, self.h, self.music, self.tint, self.theme = key, name, w, h, music, tint, theme
         self.g = [['.'] * w for _ in range(h)]
         self.o = [[' '] * w for _ in range(h)]
         self.e = []; self.r = random.Random(seed)
@@ -63,7 +63,7 @@ class Map:
     def clear(self, x0, y0, x1, y1):
         self.fill('o', x0, y0, x1, y1, ' ')
     def out(self):
-        return {'name': self.name, 'w': self.w, 'h': self.h, 'music': self.music, 'tint': list(self.tint),
+        return {'name': self.name, 'theme': self.theme, 'w': self.w, 'h': self.h, 'music': self.music, 'tint': list(self.tint),
                 'ground': [''.join(r) for r in self.g], 'objects': [''.join(r) for r in self.o], 'entities': self.e}
 
 def village():
@@ -88,6 +88,7 @@ def village():
     m.ent(type='npc', id='smith', sprite='npc_smith', x=33, y=10, name='대장장이 쇠돌')
     m.ent(type='npc', id='kid', sprite='npc_kid', x=25, y=18, name='꼬마 별이', wander=3)
     m.ent(type='player', x=10, y=21)
+    m.ent(type='waystone', x=24, y=19)
     m.ent(type='warp', x=43, y=14, w=1, h=3, to='field', tx=2, ty=21)
     for (x, y) in ((16, 12), (26, 12), (16, 18), (26, 18)): m.obj(x, y, 'l', True)
     for (x, y, c) in ((13, 7, 'j'), (14, 7, 'J'), (27, 7, 'c'), (26, 7, 'c'), (34, 7, 'j'), (12, 19, 'J'), (6, 20, 'c')):
@@ -117,6 +118,9 @@ def field():
     m.ent(type='warp', x=63, y=20, w=1, h=5, to='grove', tx=2, ty=12, need='shards')
     m.ent(type='sign', x=58, y=20, text='→ 숲지기의 빈터\n달빛 조각 셋이 모여야 길이 열린다고 한다.')
     m.ent(type='sign', x=4, y=19, text='← 달마루 마을')
+    m.ent(type='waystone', x=5, y=24)
+    # 섬으로 가는 말뚝 (다리 말고 밧줄로도)
+    m.obj(12, 32, 'O', True); m.obj(13, 27, 'O', True)
     # 달빛 조각 셋: 상자 / 도깨비불 무리 / 연못 섬
     m.ent(type='chest', id='chest_n', x=30, y=3, item='shard')
     m.ent(type='chest', id='chest_coin', x=8, y=12, item='coins20')
@@ -146,15 +150,140 @@ def grove():
     m.blob('g', 17, 12, 10, 7, 'P', 0.08)
     m.blob('g', 17, 12, 3, 2, 'S', 0)
     m.line('g', [(0, 12), (8, 12)], 'P', 2)
-    m.border('NNTt', 4, gaps=[(0, 11, 4, 14)])
+    m.line('g', [(24, 12), (31, 12)], 'P', 2)
+    m.border('NNTt', 4, gaps=[(0, 11, 4, 14), (27, 11, 31, 14)])
     m.ent(type='warp', x=0, y=11, w=1, h=4, to='field', tx=61, ty=22)
-    m.ent(type='boss', x=22, y=12)
-    m.ent(type='spring', x=17, y=12)
+    m.ent(type='warp', x=31, y=11, w=1, h=4, to='ferry', tx=2, ty=18, need='flag:boss_down')
+    m.ent(type='boss', kind='boar', x=22, y=12)
+    m.ent(type='spring', x=17, y=12, boss='boar')
     m.scatter('g', 6, (6, 4, 28, 20)); m.scatter('r', 4, (6, 4, 28, 20))
     return m
 
+def river_cross(m, x0, x1, y, mid):
+    """강(x0~x1)을 말뚝으로 건너게: 양쪽 물가와 가운데 섬에 말뚝."""
+    m.fill('g', mid - 1, y - 1, mid + 1, y + 1, '.'); m.clear(mid - 1, y - 1, mid + 1, y + 1)
+    m.obj(x0 - 1, y, 'O', True); m.obj(mid, y, 'O', True); m.obj(x1 + 1, y, 'O', True)
+    for x in (x0 - 2, x0 - 1, x1 + 1, x1 + 2):
+        m.fill('g', x, y - 1, x, y + 1, '.')
+    m.clear(x0 - 2, y - 1, x0 - 2, y + 1); m.clear(x1 + 2, y - 1, x1 + 2, y + 1)
+
+def ferry():
+    m = Map('ferry', '물안개 나루', 64, 40, 'ferry', (0.9, 1.0, 0.92), seed=21, theme='swamp')
+    m.line('g', [(0, 18), (16, 18)], 'P', 2); m.line('g', [(31, 18), (44, 14), (56, 19), (63, 19)], 'P', 2)
+    m.fill('g', 20, 0, 27, m.h - 1, 'W')
+    for y in range(m.h):
+        if (y * 7) % 5 == 0: m.g[y][20] = '.'; m.g[y][27] = '.'
+    m.blob('g', 34, 6, 5, 3.5, 'W', 0.1); m.blob('g', 34, 6, 1.6, 1.2, '.', 0)
+    m.blob('g', 50, 32, 6, 3, 'W', 0.1)
+    m.border('NTtN', 3, gaps=[(0, 17, 2, 20), (61, 18, 63, 21)])
+    river_cross(m, 20, 27, 18, 23)
+    river_cross(m, 20, 27, 31, 24)
+    m.ent(type='warp', x=0, y=17, w=1, h=4, to='grove', tx=29, ty=12)
+    m.ent(type='warp', x=63, y=18, w=1, h=4, to='lake', tx=2, ty=13, need='item:pearl')
+    m.ent(type='waystone', x=5, y=15)
+    m.ent(type='npc', id='ferry', sprite='npc_ferry', x=9, y=16, name='뱃사공 노인')
+    m.ent(type='sign', x=17, y=16, text='→ 강 건너기\n옛 말뚝이 박혀 있다. 밧줄(C)을 던져 보자.')
+    m.ent(type='sign', x=58, y=17, text='→ 이무기 소\n물방울 구슬 셋을 가져온 이만 지나가라.')
+    m.ent(type='pearl', id='pearl_reeds', x=40, y=28)
+    m.ent(type='pearl', id='pearl_rock', x=35, y=6)
+    m.ent(type='camp', id='camp_toad', x=46, y=8, kinds=['toad', 'toad', 'toad', 'wisp'], reward='pearl')
+    for (x, y, k) in ((10, 26, 'toad'), (12, 10, 'mushroom'), (34, 22, 'toad'), (40, 14, 'wisp'), (52, 24, 'toad'), (30, 34, 'mushroom'), (56, 12, 'boar'), (8, 32, 'toad')):
+        m.ent(type='enemy', kind=k, x=x, y=y)
+    for (x0, y0) in ((36, 26), (42, 30), (30, 12)):
+        for _ in range(12): m.obj(x0 + m.r.randint(-3, 3), y0 + m.r.randint(-2, 2), 'g')
+    m.scatter('g', 40); m.scatter('b', 20); m.scatter('r', 10); m.scatter('T', 12); m.scatter('w', 10)
+    m.clear(39, 27, 41, 29); m.clear(33, 5, 35, 7)
+    m.obj(34, 6, 'O', True); m.fill('g', 33, 11, 35, 11, '.'); m.clear(33, 11, 35, 12); m.obj(34, 11, 'O', True)  # 바위섬 말뚝
+    return m
+
+def lake():
+    m = Map('lake', '이무기 소', 36, 26, 'boss', (0.85, 0.95, 0.9), seed=23, theme='swamp')
+    m.blob('g', 18, 13, 9.5, 6.5, 'W', 0.06)
+    m.line('g', [(0, 13), (5, 13)], 'P', 2); m.line('g', [(30, 13), (35, 13)], 'P', 2)
+    m.border('NTt', 3, gaps=[(0, 12, 3, 15), (32, 12, 35, 15)])
+    m.ent(type='warp', x=0, y=12, w=1, h=4, to='ferry', tx=61, ty=19)
+    m.ent(type='warp', x=35, y=12, w=1, h=4, to='peak', tx=2, ty=30, need='flag:boss_serpent')
+    m.ent(type='boss', kind='serpent', x=18, y=13, lake=[9, 7, 19, 13])
+    m.scatter('g', 8, (3, 3, 32, 22)); m.scatter('r', 4, (3, 3, 32, 22))
+    return m
+
+def peak():
+    m = Map('peak', '서리봉 고개', 64, 44, 'peak', (0.92, 0.96, 1.05), seed=31, theme='snow')
+    m.line('g', [(0, 30), (14, 30), (20, 22), (34, 22), (42, 12), (54, 12), (63, 12)], 'P', 2)
+    m.line('g', [(34, 22), (40, 34), (50, 36)], 'P', 2)
+    # 얼음 틈 (물): 북서쪽 낭떠러지
+    m.fill('g', 3, 1, 32, 10, 'W')
+    m.fill('g', 12, 3, 20, 5, '.')
+    m.border('NNN', 3, gaps=[(0, 29, 2, 32), (61, 11, 63, 14)])
+    m.clear(3, 1, 32, 10)
+    m.fill('g', 15, 11, 17, 12, '.'); m.clear(15, 11, 17, 12); m.obj(16, 11, 'O', True); m.obj(16, 5, 'O', True)
+    m.ent(type='warp', x=0, y=29, w=1, h=4, to='lake', tx=33, ty=13)
+    m.ent(type='warp', x=63, y=11, w=1, h=4, to='cave', tx=2, ty=12, need='item:ember')
+    m.ent(type='waystone', x=5, y=33)
+    m.ent(type='npc', id='ranger', sprite='npc_ranger', x=9, y=28, name='산지기 할아범')
+    m.ent(type='sign', x=58, y=10, text='→ 얼음굴\n불씨 돌 셋이 없으면 얼어 버린다.')
+    m.ent(type='ember', id='ember_cliff', x=16, y=4)
+    m.ent(type='camp', id='camp_imp', x=48, y=34, kinds=['snowimp', 'snowimp', 'frostblob', 'frostblob'], reward='ember')
+    for x in range(52, 60, 2): m.obj(x, 24, 'Y' if x % 4 else 'Z', True)
+    m.ent(type='chest', id='chest_jang', x=56, y=22, item='ember')
+    for (x, y, k) in ((20, 26, 'frostblob'), (28, 18, 'snowimp'), (38, 26, 'frostblob'), (46, 16, 'snowimp'), (10, 36, 'frostblob'), (30, 36, 'boar'), (56, 30, 'frostblob')):
+        m.ent(type='enemy', kind=k, x=x, y=y)
+    m.scatter('N', 30); m.scatter('r', 16); m.scatter('R', 6); m.scatter('b', 10)
+    m.clear(55, 21, 57, 23)
+    return m
+
+def cave():
+    m = Map('cave', '얼음굴', 34, 24, 'boss', (0.85, 0.9, 1.05), seed=33, theme='snow')
+    m.blob('g', 17, 12, 11, 7.5, 'S', 0.08)
+    m.line('g', [(0, 12), (6, 12)], 'P', 2); m.line('g', [(28, 12), (33, 12)], 'P', 2)
+    m.border('rRN', 4, gaps=[(0, 11, 4, 14), (30, 11, 33, 14)])
+    m.ent(type='warp', x=0, y=11, w=1, h=4, to='peak', tx=61, ty=12)
+    m.ent(type='warp', x=33, y=11, w=1, h=4, to='ruins', tx=2, ty=20, need='flag:boss_bear')
+    m.ent(type='boss', kind='bear', x=21, y=12)
+    m.scatter('r', 5, (6, 5, 28, 19))
+    return m
+
+def ruins():
+    m = Map('ruins', '달그림자 성터', 64, 42, 'ruins', (0.82, 0.8, 1.0), seed=41, theme='night')
+    m.line('g', [(0, 20), (16, 20), (24, 14), (40, 14), (48, 22), (63, 22)], 'P', 2)
+    m.line('g', [(24, 14), (24, 32), (40, 34)], 'P', 2)
+    m.blob('g', 21, 25, 8, 6, 'S', 0.1); m.blob('g', 46, 32, 7, 5, 'S', 0.1)
+    # 해자 (물) + 무너진 다리 → 말뚝
+    m.fill('g', 30, 1, 50, 11, 'W')
+    m.border('TtN', 3, gaps=[(0, 19, 2, 22), (61, 21, 63, 24)])
+    m.clear(30, 1, 50, 11)
+    m.fill('g', 38, 5, 46, 8, '.'); m.fill('g', 32, 5, 34, 7, '.')
+    m.fill('g', 26, 5, 29, 7, '.'); m.clear(26, 5, 29, 7)
+    m.obj(28, 6, 'O', True); m.obj(33, 6, 'O', True); m.obj(38, 6, 'O', True)
+    m.ent(type='warp', x=0, y=19, w=1, h=4, to='cave', tx=31, ty=12)
+    m.ent(type='warp', x=63, y=21, w=1, h=4, to='throne', tx=2, ty=13, need='item:gloom')
+    m.ent(type='waystone', x=5, y=23)
+    m.ent(type='npc', id='moon', sprite='npc_moon', x=9, y=18, name='달님 아씨')
+    m.ent(type='gloom', id='gloom_bridge', x=42, y=6)
+    m.ent(type='camp', id='camp_shade', x=46, y=32, kinds=['shade', 'shade', 'wisp', 'wisp'], reward='gloom')
+    m.ent(type='chest', id='chest_ruin', x=12, y=34, item='gloom')
+    for x in (10, 14): m.obj(x, 33, 'Y' if x == 10 else 'Z', True)
+    for (x, y) in ((16, 22), (26, 22), (16, 28), (26, 28), (40, 30), (52, 30), (40, 36), (52, 36)):
+        m.obj(x, y, 'I' if (x + y) % 3 else 'l', True)
+    for (x, y, k) in ((20, 10, 'shade'), (30, 18, 'wisp'), (44, 18, 'shade'), (12, 28, 'wisp'), (34, 30, 'shade'), (56, 14, 'boar'), (54, 28, 'wisp')):
+        m.ent(type='enemy', kind=k, x=x, y=y)
+    m.scatter('I', 10); m.scatter('r', 10); m.scatter('g', 20); m.scatter('T', 8)
+    m.clear(11, 33, 13, 35); m.obj(10, 33, 'Y', True); m.obj(14, 33, 'Z', True)
+    return m
+
+def throne():
+    m = Map('throne', '옛 궁터', 36, 26, 'boss', (0.8, 0.78, 1.0), seed=43, theme='night')
+    m.blob('g', 18, 13, 12, 8, 'S', 0.05)
+    m.line('g', [(0, 13), (6, 13)], 'P', 2)
+    m.border('ItN', 4, gaps=[(0, 12, 4, 15)])
+    for (x, y) in ((9, 8), (27, 8), (9, 18), (27, 18)): m.obj(x, y, 'l', True)
+    m.ent(type='warp', x=0, y=12, w=1, h=4, to='ruins', tx=61, ty=22)
+    m.ent(type='boss', kind='king', x=24, y=13)
+    m.ent(type='npc', id='moon', sprite='npc_moon', x=6, y=10, name='달님 아씨')
+    return m
+
 if __name__ == '__main__':
-    data = {mm.key: mm.out() for mm in (village(), field(), grove())}
+    data = {mm.key: mm.out() for mm in (village(), field(), grove(), ferry(), lake(), peak(), cave(), ruins(), throne())}
     p = os.path.join(os.path.dirname(__file__), '..', '..', 'data', 'maps.json')
     json.dump(data, open(p, 'w'), ensure_ascii=False, indent=1)
     for k, v in data.items():

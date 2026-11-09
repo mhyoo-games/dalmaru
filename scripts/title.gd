@@ -9,6 +9,13 @@ var logo: Label
 var sub: Label
 var labels: Array = []
 var house: Texture2D
+var mode := "menu"
+var pick := 0
+var heroes := ["maru", "sori", "dolsoe"]
+var pick_box: Control
+var pick_name: Label
+var pick_desc: Label
+var hint: Label
 var tree: Texture2D
 
 func _ready() -> void:
@@ -42,11 +49,23 @@ func _ready() -> void:
 		l.position = Vector2(0, 118 + i * 18)
 		add_child(l)
 		labels.append(l)
-	var hint := UI.label("Z 고르기 · 방향키 움직이기", 10, Color(1, 1, 1, 0.55), true, true)
+	hint = UI.label("Z 고르기 · 방향키 움직이기", 10, Color(1, 1, 1, 0.55), true, true)
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	hint.size = Vector2(384, 14)
 	hint.position = Vector2(0, 198)
 	add_child(hint)
+	pick_name = UI.label("", 12, Color("fff0a0"))
+	pick_name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	pick_name.size = Vector2(384, 16)
+	pick_name.position = Vector2(0, 150)
+	pick_name.visible = false
+	add_child(pick_name)
+	pick_desc = UI.label("", 10, UI.PAPER, true, true)
+	pick_desc.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	pick_desc.size = Vector2(384, 14)
+	pick_desc.position = Vector2(0, 168)
+	pick_desc.visible = false
+	add_child(pick_desc)
 	_labels()
 
 func _labels() -> void:
@@ -58,14 +77,69 @@ func _process(delta: float) -> void:
 	t += delta
 	logo.position.y = 44 + sin(t * 1.5) * 1.5
 	queue_redraw()
+	if mode == "select":
+		if Input.is_action_just_pressed("left") or Input.is_action_just_pressed("right"):
+			pick = posmod(pick + (1 if Input.is_action_just_pressed("right") else -1), heroes.size())
+			Sound.play("select", 0.0, -4)
+			_pick_labels()
+		elif Input.is_action_just_pressed("roll"):
+			mode = "menu"
+			_show_menu(true)
+		elif Input.is_action_just_pressed("act"):
+			Sound.play("chest", 0.0, -4)
+			set_process(false)
+			Game.hero = heroes[pick]
+			get_tree().call_group("main", "start", false)
+		return
 	if Input.is_action_just_pressed("up") or Input.is_action_just_pressed("down"):
 		sel = posmod(sel + (1 if Input.is_action_just_pressed("down") else -1), items.size())
 		Sound.play("select", 0.0, -4)
 		_labels()
 	if Input.is_action_just_pressed("act"):
+		if items[sel] == "처음부터":
+			Sound.play("select", 0.0, -2)
+			mode = "select"
+			_show_menu(false)
+			_pick_labels()
+			return
 		Sound.play("chest", 0.0, -4)
 		set_process(false)
-		get_tree().call_group("main", "start", items[sel] == "이어하기")
+		get_tree().call_group("main", "start", true)
+
+func _show_menu(v: bool) -> void:
+	for l in labels: l.visible = v
+	sub.visible = v
+	pick_name.visible = not v
+	pick_desc.visible = not v
+	hint.text = "Z 고르기 · 방향키 움직이기" if v else "← → 주인공 고르기 · Z 시작 · X 뒤로"
+
+func _pick_labels() -> void:
+	var h := Rules.hero(heroes[pick])
+	pick_name.text = "%s  ·  하트 %d" % [h.name, int(h.hp / 2)]
+	pick_desc.text = h.desc
+
+func _draw_heroes() -> void:
+	for i in heroes.size():
+		var tex := Fx.tex("hero" if heroes[i] == "maru" else "hero_" + heroes[i])
+		var on := i == pick
+		var c := Vector2(132 + i * 60, 140)
+		var frame := (int(t * 6) % 4) if on else 0
+		var sc := 3.0 if on else 2.0
+		var src := Rect2(frame * 16, 0, 16, 22)
+		if on:
+			draw_circle(c + Vector2(0, 4), 22, Color(1, 0.95, 0.6, 0.12))
+		draw_texture_rect_region(tex, Rect2(c - Vector2(8, 22) * sc + Vector2(0, 4), Vector2(16, 22) * sc), src, Color.WHITE if on else Color(0.6, 0.55, 0.75))
+		# 무기 그림
+		var w: String = Rules.hero(heroes[i]).weapon
+		var wp := c + Vector2(16 if on else 11, -18 if on else -12)
+		match w:
+			"sword": draw_line(wp, wp + Vector2(0, -14), Color("d6aa6e"), 2)
+			"bow":
+				draw_arc(wp + Vector2(-3, -7), 8, -1.2, 1.2, 10, Color("8a5a3b"), 2)
+				draw_line(wp + Vector2(0, -14), wp + Vector2(0, 0), Color("fbf7ee"), 1)
+			"club":
+				draw_line(wp, wp + Vector2(2, -12), Color("8a5a3b"), 3)
+				draw_circle(wp + Vector2(2, -13), 3.5, Color("b07f4f"))
 
 func _draw() -> void:
 	# 하늘: 위는 짙은 남색, 아래는 보랏빛 노을
@@ -102,6 +176,8 @@ func _draw() -> void:
 	# 창문 불빛
 	for p in [Vector2(42, 150), Vector2(74, 150), Vector2(316, 156), Vector2(348, 156)]:
 		draw_circle(p, 6, Color(1, 0.8, 0.4, 0.15 + 0.05 * sin(t * 3)))
+	if mode == "select":
+		_draw_heroes()
 	# 반딧불
 	for i in 12:
 		var p := Vector2(fmod(i * 47.0 + t * (6 + i % 3), 384), 170 + sin(t + i) * 14)

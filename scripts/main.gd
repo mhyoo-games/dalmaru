@@ -55,9 +55,10 @@ func start(cont: bool) -> void:
 	_load(Game.map_key, spawn)
 	await _fade_to(0.0, 0.5)
 	if not cont:
-		hud.open_dialog([["마루", "으아암… 잘 잤다! 오늘따라 마을이 조용하네."],
-			["마루", "촌장 할머니가 아침부터 찾으셨다고 했지. 마당으로 가 봐야겠다."],
-			["", "방향키(WASD)로 걷고, Z로 말 걸기·휘두르기, X로 구르기. Esc는 쉬기."]])
+		var me: String = Rules.hero(Game.hero).name
+		hud.open_dialog([[me, "으아암… 잘 잤다! 오늘따라 마을이 조용하네."],
+			[me, "촌장 할머니가 아침부터 찾으셨다고 했지. 마당으로 가 봐야겠다."],
+			["", "방향키(WASD)로 걷고, Z 공격·말 걸기, X 구르기, C 갈고리 밧줄, V 약초, Esc 쉬기."]])
 
 func _entry_of(key: String) -> Vector2i:
 	# 이어하기: 그 지도로 들어오는 출구 자리에서 시작
@@ -77,15 +78,22 @@ func _load(key: String, spawn: Vector2i) -> void:
 	world.build(key, spawn)
 	Game.map_key = key
 	var m: Dictionary = Game.maps[key]
-	if key == "grove" and Game.flag("boss_down"):
-		Sound.music("field")
-	elif key != "grove":
+	var bk := _boss_of(key)
+	if bk == "":
 		Sound.music(m.music)
+	elif Game.flag(Rules.boss_flag(bk)):
+		Sound.music(Game.maps[Rules.CHAPTERS[Rules.chapter_of(key)].maps[0]].music)
 	else:
 		Sound.stop_music()
 	hud.show_banner(m.name)
+	hud.refresh()
 	hud.boss_show(false)
 	Game.save()
+
+func _boss_of(key: String) -> String:
+	for e in Game.maps[key].entities:
+		if e.type == "boss": return e.get("kind", "boar")
+	return ""
 
 func go_map(key: String, spawn: Vector2i) -> void:
 	if moving:
@@ -105,11 +113,23 @@ func dialog(lines: Array, cb := Callable(), choices: Array = []) -> void:
 	hud.open_dialog(lines, cb, choices)
 
 func got_shard() -> void:
-	if Game.shards >= Rules.SHARDS_NEEDED:
-		hud.open_dialog([["", "달빛 조각을 모두 모았다! (%d/%d)" % [Game.shards, Rules.SHARDS_NEEDED]],
-			["마루", "조각들이 서로 끌어당기듯 따뜻해… 이제 숲지기에게 가 보자. 들판 동쪽 끝이랬지."]])
+	got_item("shard")
+
+func got_item(item: String) -> void:
+	var nm := ""
+	var where := ""
+	for c in Rules.CHAPTERS:
+		if Rules.CHAPTERS[c].item == item:
+			nm = Rules.CHAPTERS[c].item_name
+			where = ["", "들판 동쪽 끝 숲길", "나루 동쪽 끝 이무기 소", "고개 꼭대기 얼음굴", "성터 안쪽 옛 궁터"][c]
+	var me: String = Rules.hero(Game.hero).name
+	var n := Game.count(item)
+	if n >= Rules.SHARDS_NEEDED:
+		hud.open_dialog([["", "%s을(를) 모두 모았다! (%d/%d)" % [nm, n, Rules.SHARDS_NEEDED]],
+			[me, "셋이 모이니 따뜻하게 울린다… 이제 %s(으)로 가 보자." % where]])
 	else:
-		hud.open_dialog([["", "달빛 조각을 얻었다! (%d/%d)" % [Game.shards, Rules.SHARDS_NEEDED]]])
+		hud.open_dialog([["", "%s을(를) 얻었다! (%d/%d)" % [nm, n, Rules.SHARDS_NEEDED]]])
+	hud.refresh()
 	Game.save()
 
 func player_died() -> void:
@@ -122,16 +142,18 @@ func player_died() -> void:
 	await _fade_to(0.0, 0.6)
 	hud.open_dialog([["마루", "으윽… 집이다. 누가 데려다줬나 봐."], ["", "엽전을 절반 잃었다. 체력은 모두 돌아왔다."]])
 
-func boss_start(_b: Node) -> void:
-	hud.boss_show(true)
+func boss_start(b: Node) -> void:
+	var nm := "이무기 소의 이무기" if b.kind == "serpent" else String(b.KINDS[b.kind].name)
+	hud.boss_show(true, nm)
 	hud.boss_hp(1, 1)
 
 func boss_hp(hp: int, mx: int) -> void:
 	hud.boss_hp(hp, mx)
 
-func boss_defeated(_b: Node) -> void:
+func boss_defeated(b: Node) -> void:
 	hud.boss_show(false)
-	Game.set_flag("boss_down")
+	var kind: String = b.kind
+	Game.set_flag(Rules.boss_flag(kind))
 	Game.max_hp += 2
 	Game.hp = Game.max_hp
 	Game.changed.emit()
@@ -141,9 +163,30 @@ func boss_defeated(_b: Node) -> void:
 	Sound.music("victory", false)
 	await get_tree().create_timer(1.2).timeout
 	Game.busy = false
-	hud.open_dialog([["", "달빛 조각 셋이 숲지기의 이마로 날아가 스며들었다…"],
-		["숲지기", "……부우. (거친 숨이 잦아들고, 눈빛이 순해졌다)"],
-		["", "달샘에 다시 달빛이 고이기 시작했다. 최대 체력이 하트 하나만큼 늘었다!"],
-		["마루", "이제 우물에도 물이 돌아오겠지. 할머니께 알려 드리자!"]], func():
-			Sound.music("field"))
+	var me: String = Rules.hero(Game.hero).name
+	var lines := []
+	match kind:
+		"boar":
+			lines = [["", "달빛 조각 셋이 숲지기의 이마로 날아가 스며들었다…"],
+				["숲지기", "……부우. (거친 숨이 잦아들고, 눈빛이 순해졌다)"],
+				["", "달샘에 다시 달빛이 고이기 시작했다. 최대 체력이 하트 하나만큼 늘었다!"],
+				[me, "이제 우물에도 물이 돌아오겠지. 할머니께 알려 드리자!"]]
+		"serpent":
+			lines = [["", "물방울 구슬 셋이 이무기의 비늘 사이로 스며들자, 물안개가 걷히기 시작했다."],
+				["이무기", "…오래 묵은 꿈에서 깼구나. 용이 되려다 그림자에 홀렸던 게지."],
+				["이무기", "북쪽 서리봉도 얼어붙었다. 산 위의 불씨가 꺼진 탓이야."],
+				["", "최대 체력이 하트 하나만큼 늘었다! 나루 동쪽 길로 서리봉 고개에 갈 수 있다."]]
+		"bear":
+			lines = [["", "불씨 돌 셋이 서리곰의 가슴에서 따뜻하게 타올랐다."],
+				["서리곰", "크르르… 춥고, 졸리다… 이제야 겨울잠을 잘 수 있겠군."],
+				["", "얼음굴 안쪽 벽에 보랏빛 달그림자가 길게 드리웠다."],
+				["", "최대 체력이 하트 하나만큼 늘었다! 굴 동쪽으로 달그림자 성터에 갈 수 있다."]]
+		"king":
+			lines = [["", "달그림자 조각 셋이 도깨비왕의 방망이에 박히자, 검은 안개가 터져 나갔다."],
+				["도깨비왕", "허허… 달을 통째로 삼키려다 체했구먼. 꼬맹이가 제법이야."],
+				["달님 아씨", "고마워요. 그림자에 가렸던 달이 다시 둥글게 차오를 거예요."],
+				[me, "이제 달마루에도 밤마다 달빛이 가득하겠네요!"],
+				["", "— 달마루 모험기 끝 — 함께해 주셔서 고맙습니다. (이정표로 어디든 다시 다닐 수 있어요)"]]
+	hud.open_dialog(lines, func():
+		Sound.music(Game.maps[Game.map_key].music if kind != "boar" else "field"))
 	Game.save()

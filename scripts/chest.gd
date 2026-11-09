@@ -55,15 +55,15 @@ func interact(_p: Node) -> void:
 	tw.tween_method(func(v): lid = v; queue_redraw(), 0.0, 1.0, 0.25)
 	var w = get_tree().get_first_node_in_group("world")
 	match item:
-		"shard":
-			Game.shards += 1
-			Game.set_flag(chest_id + "_shard")
+		"shard", "pearl", "ember", "gloom":
+			Game.add_item(item)
+			Game.set_flag(chest_id + "_" + item)
 			Sound.play("shard", 0.0)
-			get_tree().call_group("main", "got_shard")
+			get_tree().call_group("main", "got_item", item)
 		"coins20":
 			Game.add_coins(20)
 			get_tree().call_group("main", "dialog", [["", "엽전 꾸러미를 찾았다! (엽전 +20)"]])
 		"herb":
 			Game.herbs += 2
 			Game.changed.emit()
-			get_tree().call_group("main", "dialog", [["", "약초 두 묶음을 찾았다! (C 키로 먹기)"]])
+			get_tree().call_group("main", "dialog", [["", "약초 두 묶음을 찾았다! (V 키로 먹기)"]])

@@ -12,6 +12,7 @@ var toast_bg: ColorRect
 var boss_box: Control
 var boss_fill: ColorRect
 var boss_ghost: ColorRect
+var boss_name: Label
 # 대화
 var dlg: NinePatchRect
 var dlg_name: Label
@@ -103,8 +104,19 @@ func refresh() -> void:
 			tr.texture = UI.heart_tex([2, 1, 0][hs[i]])
 	coin_lbl.text = str(Game.coins)
 	herb_lbl.text = "약초 %d" % Game.herbs if Game.herbs > 0 else ""
+	# 지금 장의 모을 물건 (마을에서는 아직 안 끝난 첫 장)
+	var ch := Rules.chapter_of(Game.map_key)
+	if ch == 0:
+		ch = 1
+		for c in Rules.CHAPTERS:
+			if Game.flag(Rules.boss_flag(Rules.CHAPTERS[c].boss)): ch = mini(4, c + 1)
+	var it: String = Rules.CHAPTERS[ch].item
+	var tex := Fx.tex("moonshard" if it == "shard" else "item_" + it)
+	var got := Game.count(it)
+	var done := Game.flag(Rules.boss_flag(Rules.CHAPTERS[ch].boss))
 	for i in shard_icons.size():
-		shard_icons[i].modulate = Color.WHITE if i < Game.shards else Color(0.2, 0.2, 0.3, 0.6)
+		shard_icons[i].texture = tex
+		shard_icons[i].modulate = Color.WHITE if (i < got or done) else Color(0.2, 0.2, 0.3, 0.6)
 
 func show_banner(text: String) -> void:
 	banner.text = "〜 %s 〜" % text
@@ -135,9 +147,9 @@ func _build_boss() -> void:
 	boss_box.position = Vector2(92, 196)
 	boss_box.visible = false
 	root.add_child(boss_box)
-	var nm := UI.label("숲지기 대왕멧돼지", 10, UI.PAPER, true, true)
-	nm.position = Vector2(0, -13)
-	boss_box.add_child(nm)
+	boss_name = UI.label("", 10, UI.PAPER, true, true)
+	boss_name.position = Vector2(0, -13)
+	boss_box.add_child(boss_name)
 	var bg := ColorRect.new()
 	bg.color = UI.INK
 	bg.size = Vector2(200, 7)
@@ -153,8 +165,9 @@ func _build_boss() -> void:
 	boss_fill.size = Vector2(198, 5)
 	boss_box.add_child(boss_fill)
 
-func boss_show(v: bool) -> void:
+func boss_show(v: bool, nm := "") -> void:
 	boss_box.visible = v
+	if nm != "": boss_name.text = nm
 	boss_fill.size.x = 198
 	boss_ghost.size.x = 198
 
@@ -322,7 +335,7 @@ func _build_pause() -> void:
 		l.position = Vector2(14, 30 + i * 16)
 		b.add_child(l)
 		pause_items.append(l)
-	var help := UI.label("이동 방향키/WASD · Z 공격·말하기 · X 구르기 · C 약초", 10, UI.PAPER, true, true)
+	var help := UI.label("방향키/WASD 이동 · Z 공격·말하기 · X 구르기 · C 갈고리 밧줄 · V 약초", 10, UI.PAPER, true, true)
 	help.position = Vector2(0, 170)
 	help.size = Vector2(384, 14)
 	help.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER

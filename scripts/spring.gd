@@ -3,10 +3,11 @@ extends Node2D
 
 var t := 0.0
 var fill := 0.0
+var boss_kind := "boar"
 
 func _ready() -> void:
 	z_index = -15
-	fill = 1.0 if Game.flag("boss_down") else 0.0
+	fill = 1.0 if Game.flag(Rules.boss_flag(boss_kind)) else 0.0
 	add_to_group("spring")
 
 func refill() -> void:

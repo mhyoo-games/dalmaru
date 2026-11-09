@@ -4,6 +4,20 @@ extends RefCounted
 
 const TILE := 16
 const SHARDS_NEEDED := 3
+const ROPE_TILES := 6
+## 주인공 셋. 무기가 다르다.
+const HEROES := {
+	"maru": {"name": "마루", "weapon": "sword", "hp": 6, "speed": 82.0, "desc": "목검 · 빠른 2연타", "wname": "목검"},
+	"sori": {"name": "소리", "weapon": "bow", "hp": 6, "speed": 86.0, "desc": "활 · 멀리서 쏘기, 꾹 눌러 꿰뚫기", "wname": "활"},
+	"dolsoe": {"name": "돌쇠", "weapon": "club", "hp": 8, "speed": 72.0, "desc": "방망이 · 느리지만 묵직, 꾹 눌러 내려찍기", "wname": "방망이"},
+}
+## 장마다 모을 물건 셋과 대왕
+const CHAPTERS := {
+	1: {"item": "shard", "item_name": "달빛 조각", "boss": "boar", "maps": ["field", "grove"]},
+	2: {"item": "pearl", "item_name": "물방울 구슬", "boss": "serpent", "maps": ["ferry", "lake"]},
+	3: {"item": "ember", "item_name": "불씨 돌", "boss": "bear", "maps": ["peak", "cave"]},
+	4: {"item": "gloom", "item_name": "달그림자 조각", "boss": "king", "maps": ["ruins", "throne"]},
+}
 const BLOCKING_OBJECTS := "TtMNrRbBfFvljJc#"
 const CUTTABLE := "bBg"
 const SWORD_COST := [30, 60]
@@ -43,9 +57,38 @@ static func footprint_cells(entities: Array) -> Dictionary:
 
 ## 시작 칸에서 걸어서 닿는 칸들. 벨 수 있는 덤불·항아리는 지나갈 수 있는 것으로 본다.
 static func reachable(m: Dictionary, start: Vector2i) -> Dictionary:
+	var seen := _walk(m, {start: true}, [start])
+	# 밧줄로 말뚝까지 날아갈 수 있으면 그 둘레에서 다시 걷는다
+	var posts := []
+	for y in int(m.h):
+		var r: String = m.objects[y]
+		for x in r.length():
+			if r[x] == "O": posts.append(Vector2i(x, y))
+	var grew := true
+	while grew:
+		grew = false
+		for p in posts:
+			if seen.has(p): continue
+			if _rope_from_seen(m, seen, p):
+				seen[p] = true
+				seen = _walk(m, seen, [p])
+				grew = true
+	return seen
+
+## 걷는 칸 어디선가 8방향 곧은 줄로 ROPE_TILES 안에 말뚝이 보이나 (물은 넘고 나무·바위는 막힘)
+static func _rope_from_seen(m: Dictionary, seen: Dictionary, p: Vector2i) -> bool:
+	for d in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1), Vector2i(1, 1), Vector2i(-1, 1), Vector2i(1, -1), Vector2i(-1, -1)]:
+		for k in range(1, ROPE_TILES + 1):
+			var c: Vector2i = p + d * k
+			var o := cell(m.objects, c.x, c.y)
+			if seen.has(c):
+				return true
+			if o != " " and BLOCKING_OBJECTS.contains(o):
+				break
+	return false
+
+static func _walk(m: Dictionary, seen: Dictionary, q: Array) -> Dictionary:
 	var blocked := footprint_cells(m.entities)
-	var seen := {start: true}
-	var q: Array[Vector2i] = [start]
 	var W: int = m.w
 	var H: int = m.h
 	while not q.is_empty():
@@ -61,6 +104,10 @@ static func reachable(m: Dictionary, start: Vector2i) -> Dictionary:
 			q.append(n)
 	return seen
 
+## 출구 도착 칸이 걸을 수 있는 칸인지
+static func walkable_cell(m: Dictionary, c: Vector2i) -> bool:
+	return not blocks(cell(m.ground, c.x, c.y), cell(m.objects, c.x, c.y)) and not footprint_cells(m.entities).has(c)
+
 ## 칸 자체 또는 바로 옆 칸에 닿을 수 있나 (말 걸기·줍기)
 static func can_reach(seen: Dictionary, c: Vector2i) -> bool:
 	for d in [Vector2i.ZERO, Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
@@ -70,6 +117,29 @@ static func can_reach(seen: Dictionary, c: Vector2i) -> bool:
 
 static func sword_damage(level: int) -> int:
 	return 1 + level
+
+## 무기별 피해. charged = 꾹 눌렀다 놓기(활 꿰뚫기·방망이 내려찍기)
+static func weapon_damage(weapon: String, level: int, charged := false, combo := 0) -> int:
+	match weapon:
+		"bow": return 1 + level + (1 if charged else 0)
+		"club": return 2 + level + (1 if charged else 0)
+	return 1 + level + (1 if combo == 1 else 0)
+
+static func hero(id: String) -> Dictionary:
+	return HEROES.get(id, HEROES["maru"])
+
+static func chapter_of(map_key: String) -> int:
+	for c in CHAPTERS:
+		if map_key in CHAPTERS[c].maps:
+			return c
+	return 0
+
+static func boss_flag(kind: String) -> String:
+	return "boss_down" if kind == "boar" else "boss_" + kind
+
+## 모은 물건 개수: counts = {"shard": 2, "pearl": 0, ...}
+static func item_count(counts: Dictionary, item: String) -> int:
+	return int(counts.get(item, 0))
 
 static func sword_cost(level: int) -> int:
 	return SWORD_COST[level] if level < SWORD_COST.size() else -1
@@ -106,8 +176,17 @@ static func coin_value(kind: String) -> int:
 static func death_coins(coins: int) -> int:
 	return coins - coins / 2
 
-static func can_enter(need: String, shards: int) -> bool:
-	return need != "shards" or shards >= SHARDS_NEEDED
+## need: "" | "shards"(1장 물건 셋) | "item:pearl" | "flag:boss_down"
+static func can_enter(need: String, counts: Dictionary, flags: Dictionary = {}) -> bool:
+	if need == "":
+		return true
+	if need == "shards":
+		return item_count(counts, "shard") >= SHARDS_NEEDED
+	if need.begins_with("item:"):
+		return item_count(counts, need.substr(5)) >= SHARDS_NEEDED
+	if need.begins_with("flag:"):
+		return flags.get(need.substr(5), false)
+	return false
 
 ## 4방향 중 가장 가까운 쪽 (애니메이션 줄 고르기)
 static func facing_row(dir: Vector2) -> int:
