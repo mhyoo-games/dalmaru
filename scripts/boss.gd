@@ -185,7 +185,7 @@ func _physics_process(delta: float) -> void:
 			spr.frame = 0
 	move_and_slide()
 	if state in ["charge", "think", "aim", "stun", "land", "summon"] and to_p.length() < 18 and not p.is_rolling():
-		p.hurt(2, global_position)
+		p.hurt(2 if state == "charge" else 1, global_position)
 
 func _watch_ring(ring: Ring) -> void:
 	while is_instance_valid(ring):

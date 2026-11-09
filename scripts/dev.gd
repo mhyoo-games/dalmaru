@@ -86,14 +86,62 @@ func _run() -> void:
 			await tap("roll"); await wait(0.1); await shot("field_roll")
 		"grove":
 			Game.shards = 3
+			Game.max_hp = 99; Game.hp = 99
 			main().go_map("grove", Vector2i(6, 12))
 			await wait(1.0)
 			await shot("grove_enter")
-			await hold("right", 0.9)
-			await wait(1.8)
+			await hold("right", 1.6)
+			await wait(0.4)
 			await shot("boss_intro")
-			await wait(1.5)
+			await wait(2.0)
 			await shot("boss_fight")
+			var b = get_tree().get_first_node_in_group("boss")
+			for i in 14:
+				await wait(0.35)
+				var p = get_tree().get_first_node_in_group("player")
+				if b and is_instance_valid(b):
+					p.facing = (b.global_position - p.global_position).normalized()
+				await tap("act")
+				if i % 4 == 1: await shot("boss_%d" % i)
+				await tap("roll")
+			b._go("stun")
+			b.velocity = Vector2.ZERO
+			var p2 = get_tree().get_first_node_in_group("player")
+			p2.position = b.position - Vector2(26, 0)
+			p2.facing = Vector2.RIGHT
+			await wait(0.1)
+			var before: int = b.hp
+			await tap("act")
+			await wait(0.2)
+			print("boss hp ", before, " -> ", b.hp)
+			await shot("boss_hit")
+			await wait(0.4)
+			b.take_hit(99, p2.global_position)
+			await wait(0.6)
+			await shot("boss_dying")
+			await wait(3.4)
+			print("boss state ", b.state if is_instance_valid(b) else "freed", " st ", b.st if is_instance_valid(b) else 0, " busy ", Game.busy, " ts ", Engine.time_scale)
+			await shot("boss_calm")
+			await close_dialogs()
+			await wait(2.6)
+			await shot("spring_full")
+		"combat":
+			main().go_map("field", Vector2i(16, 22))
+			await wait(1.0)
+			var w = get_tree().get_first_node_in_group("world")
+			var p = get_tree().get_first_node_in_group("player")
+			for e in get_tree().get_nodes_in_group("enemy"): e.queue_free()
+			w.spawn_enemy("mushroom", p.position + Vector2(30, 0))
+			w.spawn_enemy("boar", p.position + Vector2(-60, 30))
+			w.spawn_enemy("wisp", p.position + Vector2(40, -50))
+			await wait(1.0)
+			await shot("c_spawn")
+			p.facing = Vector2.RIGHT
+			await tap("act"); await wait(0.05); await shot("c_slash1")
+			await wait(0.12); await tap("act"); await wait(0.05); await shot("c_slash2")
+			await wait(0.8); await shot("c_after")
+			await wait(1.0); await shot("c_wisp")
+			await tap("roll"); await wait(0.08); await shot("c_roll")
 		"talk":
 			var g := get_tree().get_nodes_in_group("interact")
 			for n in g:

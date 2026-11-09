@@ -8,7 +8,7 @@ const OBJ := {
 	"M": ["tree_maple", Vector2(10, 6), false, 2], "N": ["tree_pine", Vector2(10, 6), false, 2],
 	"r": ["rock", Vector2(12, 7), false, 1], "R": ["rock_big", Vector2(20, 9), false, 1],
 	"b": ["bush", Vector2(12, 8), true, 1], "B": ["bush_berry", Vector2(12, 8), true, 1],
-	"g": ["", Vector2.ZERO, true, 0],
+	"g": ["", Vector2.ZERO, true, 0], "w": ["", Vector2.ZERO, false, 0],
 	"f": ["fence_h", Vector2(16, 4), false, 3], "F": ["fence_post", Vector2(5, 4), false, 3], "v": ["fence_v", Vector2(5, 16), false, 1],
 	"l": ["lantern", Vector2(10, 6), false, 1], "j": ["jar", Vector2(10, 6), true, 1], "J": ["jar_red", Vector2(10, 6), true, 1],
 	"c": ["crate", Vector2(13, 8), false, 1],
@@ -165,11 +165,13 @@ func _object(o: String, x: int, y: int, walls: StaticBody2D, rng: RandomNumberGe
 	node.position = pos
 	ysort.add_child(node)
 	var spr := Sprite2D.new()
-	if o == "g":
+	if o == "g" or o == "w":
 		var at := AtlasTexture.new()
 		at.atlas = Fx.tex("tiles")
-		at.region = Rect2(3 * T, T, T, T)
+		at.region = Rect2((3 if o == "g" else [0, 1, 5][rng.randi_range(0, 2)]) * T, T, T, T)
 		spr.texture = at
+		if o == "w":
+			node.z_index = -10
 	else:
 		spr.texture = Fx.tex(info[0])
 	spr.centered = true

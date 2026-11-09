@@ -1,7 +1,7 @@
 """지도를 코드로 짓는다 → data/maps.json
 땅(ground): . 풀  P 흙길  S 돌바닥  W 물
 소품(objects): T 둥근나무 t 둥근나무2 M 단풍 N 소나무 r 바위 R 큰바위 b 덤불(벨 수 있음) B 열매덤불
-               g 긴풀(벨 수 있음) f 울타리 F 울타리기둥 v 세로울타리 l 석등 j 항아리 J 붉은항아리 c 상자 # 막힘
+               g 긴풀(벨 수 있음) w 꽃무더기 f 울타리 F 울타리기둥 v 세로울타리 l 석등 j 항아리 J 붉은항아리 c 상자 # 막힘
 python3 tools/maps/gen.py
 """
 import json, math, os, random
@@ -95,6 +95,7 @@ def village():
     # 밭과 울타리
     m.fill('o', 4, 24, 14, 24, 'f'); m.obj(4, 24, 'F', True); m.obj(14, 24, 'F', True)
     for x in range(5, 14, 2): m.obj(x, 26, 'g', True)
+    for _ in range(14): m.obj(m.r.randint(4, 40), m.r.randint(4, 26), 'w')
     m.scatter('B', 4, (4, 11, 18, 17)); m.scatter('b', 8); m.scatter('g', 10); m.scatter('M', 3, (28, 18, 40, 27)); m.scatter('r', 4)
     return m
 
@@ -125,7 +126,13 @@ def field():
     for (x, y, k) in ((18, 24, 'mushroom'), (26, 22, 'mushroom'), (28, 12, 'mushroom'), (35, 10, 'wisp'), (44, 18, 'boar'),
                       (52, 14, 'mushroom'), (24, 34, 'boar'), (40, 36, 'mushroom'), (56, 28, 'wisp'), (16, 12, 'mushroom'), (8, 26, 'mushroom')):
         m.ent(type='enemy', kind=k, x=x, y=y)
-    m.scatter('g', 60); m.scatter('b', 26); m.scatter('B', 6); m.scatter('r', 14); m.scatter('R', 5); m.scatter('M', 6); m.scatter('T', 10)
+    for (cx, cy, rx, ry) in ((26, 26, 4, 2.5), (44, 12, 3, 2), (8, 30, 3, 3), (54, 40, 4, 2), (36, 34, 3, 2)):
+        for y in range(int(cy - ry), int(cy + ry) + 1):
+            for x in range(int(cx - rx), int(cx + rx) + 1):
+                if ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2 < 1 and m.r.random() < 0.7: m.obj(x, y, 'g' if (x * 3 + y) % 4 else 'w')
+    for (cx, cy) in ((18, 10), (40, 26), (50, 18), (10, 40), (30, 40)):
+        for _ in range(9): m.obj(cx + m.r.randint(-3, 3), cy + m.r.randint(-2, 2), 'w')
+    m.scatter('g', 40); m.scatter('b', 26); m.scatter('B', 6); m.scatter('r', 14); m.scatter('R', 5); m.scatter('M', 6); m.scatter('T', 10)
     m.clear(12, 32, 14, 34)
     return m
 
