@@ -86,9 +86,10 @@ func _run() -> void:
 			await tap("roll"); await wait(0.1); await shot("field_roll")
 		"grove":
 			Game.shards = 3
-			Game.max_hp = 99; Game.hp = 99
 			main().go_map("grove", Vector2i(6, 12))
 			await wait(1.0)
+			get_tree().get_first_node_in_group("player").invuln = 9999.0
+			get_tree().get_first_node_in_group("player").no_blink = true
 			await shot("grove_enter")
 			await hold("right", 1.6)
 			await wait(0.4)

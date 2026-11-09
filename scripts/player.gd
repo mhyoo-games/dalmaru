@@ -22,6 +22,7 @@ var hit_done := false
 var knock := Vector2.ZERO
 var shake_amt := 0.0
 var step_t := 0.0
+var no_blink := false  # 개발용 화면 찍기
 
 func _ready() -> void:
 	add_to_group("player")
@@ -114,7 +115,7 @@ func _physics_process(delta: float) -> void:
 			velocity = Vector2.ZERO
 	move_and_slide()
 	# 깜빡임 (무적 시간)
-	spr.visible = not (invuln > 0 and state != "roll" and int(invuln * 20) % 2 == 0)
+	spr.visible = no_blink or not (invuln > 0 and state != "roll" and int(invuln * 20) % 2 == 0)
 	if cam:
 		shake_amt = move_toward(shake_amt, 0.0, delta * 12.0)
 		cam.offset = Vector2(0, -8) + Vector2(randf_range(-1, 1), randf_range(-1, 1)) * shake_amt
