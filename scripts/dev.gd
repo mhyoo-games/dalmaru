@@ -231,6 +231,18 @@ func _run() -> void:
 					await shot("end_" + mk[0])
 					await close_dialogs()
 					print(mk[0], " boss ", b.kind, " flag ", Game.flag(Rules.boss_flag(b.kind)))
+		"pickup":
+			# 바로 앞에서 잡은 적의 엽전이 발밑에 떨어져도 먹히는지
+			main().go_map("field", Vector2i(16, 22)); await wait(1.2)
+			for e in get_tree().get_nodes_in_group("enemy"): e.queue_free()
+			var p = get_tree().get_first_node_in_group("player")
+			p.invuln = 9999.0
+			var w = get_tree().get_first_node_in_group("world")
+			var before := Game.coins
+			for i in 3:
+				w.spawn_pickup("coin", p.position, "", 1)
+			await wait(1.0)
+			print("coins ", before, " -> ", Game.coins)
 		"bridge":
 			main().go_map("field", Vector2i(23, 33))
 			await wait(1.2)

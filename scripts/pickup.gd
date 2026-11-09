@@ -6,6 +6,7 @@ var pickup_id := ""
 var value := 1
 var hit_radius := 4.0
 var pulled_by_rope := true
+var taken := false
 var spr: Sprite2D
 var t := 0.0
 var vel := Vector2.ZERO
@@ -62,13 +63,20 @@ func _physics_process(delta: float) -> void:
 		var d: Vector2 = p.global_position - global_position
 		if d.length() < 28:
 			position += d.normalized() * 110 * delta
+	# 생기자마자 주인공과 겹쳐 있으면 "들어옴" 신호가 다시 오지 않으므로 직접 확인한다
+	# (밧줄로 끌어와 바로 앞에서 잡았을 때 엽전이 안 먹히던 문제)
+	if t > 0.25 and not taken:
+		for b in get_overlapping_bodies():
+			_on_body(b)
+			if taken: return
 	if t > 12 and not key_item:
 		modulate.a = 0.5 + 0.5 * sin(t * 20)
 		if t > 15: queue_free()
 
 func _on_body(b: Node) -> void:
-	if not b.is_in_group("player") or t < 0.25:
+	if taken or not b.is_in_group("player") or t < 0.25:
 		return
+	taken = true
 	match kind:
 		"coin":
 			Game.add_coins(value)
