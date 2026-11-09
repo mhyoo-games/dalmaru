@@ -1,0 +1,499 @@
+{
+ "village": {
+  "name": "달마루 마을",
+  "w": 44,
+  "h": 30,
+  "music": "village",
+  "tint": [
+   1.0,
+   0.92,
+   0.86
+  ],
+  "ground": [
+   "............................................",
+   "............................................",
+   "............................................",
+   "............................................",
+   "............................................",
+   "............................................",
+   "............................................",
+   "............................................",
+   ".........PP..........PP.......PP............",
+   ".........PPPPPPPPPPPPPPPPPPPPPPP............",
+   ".........PPPPPPPPPPPPPPPPPPPPPPP............",
+   ".................SSSSPPSSS....PP............",
+   "................SSSSSPPSSSS...PP............",
+   "...............SSSSSSPPSSSSS..PP............",
+   "...............SSSSSSSSSSSSS................",
+   "...............SSSSSSSSSSSSPPPPPPPPPPPPPPPPP",
+   "...............SSSSSSSSSSSSPPPPPPPPPPPPPPPPP",
+   "...............SSSSSSSSSSSSS................",
+   "................SSSSSPPSSSS.................",
+   "..................SSSPPSS...................",
+   ".........PP..........PP.........WWWWW.......",
+   ".........PPPPPPPPPPPPPP.......WWWWWWWWW.....",
+   ".........PPPPPPPPPPPPPP......WWWWWWWWWWW....",
+   ".............................WWWWWWWWWWW....",
+   ".............................WWWWWWWWWWW....",
+   "..............................WWWWWWWWW.....",
+   "................................WWWWW.......",
+   "............................................",
+   "............................................",
+   "............................................"
+  ],
+  "objects": [
+   "tTNttTNtTtMMMNTMtNMtMTMNTMtTMTTtNTTTTNNTMtNT",
+   "t T T M T t M M T T t t M t M t N T t N N tT",
+   "NTT t M N M T N M M N T M T M T N T T T T  t",
+   "t                                        ttN",
+   "NTM                                        T",
+   "t                                        TtM",
+   "TTT           g     bg                     N",
+   "t            jJ           cc      j      TMM",
+   "NMM                                        T",
+   "t  b                                     NTT",
+   "tNM                                        t",
+   "M     B                   g              tMT",
+   "tTT             l         l                M",
+   "M          bgB                           MTN",
+   "ttt                                         ",
+   "T   B                                       ",
+   "MtT                                         ",
+   "M   B                                       ",
+   "ttT             l         l      b    g    N",
+   "N           J    g           bM        g NNt",
+   "TNt b c                                    N",
+   "M r                                      NMM",
+   "TTM                                        N",
+   "t  r                  b     g            TTt",
+   "NtN FfffffffffF    g                       T",
+   "N      g                     M          MTNT",
+   "TTt  g g g g g                             t",
+   "M  Nrt t T N N M trT T t T N N N t TbN M Ntt",
+   "NT t T N M N T T T N N t T T T N T M T t M T",
+   "MTTtNttNtNtMNNNTNtTNMMNTTTMMTNTtTTtMTTNTtTMt"
+  ],
+  "entities": [
+   {
+    "type": "house",
+    "sprite": "hanok_big",
+    "x": 6,
+    "y": 7,
+    "fw": 6,
+    "fh": 4,
+    "door": [
+     9,
+     7
+    ],
+    "name": "촌장 댁"
+   },
+   {
+    "type": "house",
+    "sprite": "hanok",
+    "x": 28,
+    "y": 7,
+    "fw": 5,
+    "fh": 4,
+    "door": [
+     30,
+     7
+    ],
+    "name": "대장간"
+   },
+   {
+    "type": "house",
+    "sprite": "hanok",
+    "x": 7,
+    "y": 19,
+    "fw": 5,
+    "fh": 4,
+    "door": [
+     9,
+     19
+    ],
+    "name": "마루네 집"
+   },
+   {
+    "type": "well",
+    "x": 21,
+    "y": 15,
+    "fw": 2,
+    "fh": 2
+   },
+   {
+    "type": "sign",
+    "x": 38,
+    "y": 13,
+    "text": "→ 솔바람 들판\n달샘이 마른 뒤로 도깨비불이 자주 보인다. 조심!"
+   },
+   {
+    "type": "sign",
+    "x": 13,
+    "y": 20,
+    "text": "마루네 집"
+   },
+   {
+    "type": "npc",
+    "id": "granny",
+    "sprite": "npc_granny",
+    "x": 13,
+    "y": 10,
+    "name": "촌장 할머니"
+   },
+   {
+    "type": "npc",
+    "id": "smith",
+    "sprite": "npc_smith",
+    "x": 33,
+    "y": 10,
+    "name": "대장장이 쇠돌"
+   },
+   {
+    "type": "npc",
+    "id": "kid",
+    "sprite": "npc_kid",
+    "x": 25,
+    "y": 18,
+    "name": "꼬마 별이",
+    "wander": 3
+   },
+   {
+    "type": "player",
+    "x": 10,
+    "y": 21
+   },
+   {
+    "type": "warp",
+    "x": 43,
+    "y": 14,
+    "w": 1,
+    "h": 3,
+    "to": "field",
+    "tx": 2,
+    "ty": 21
+   }
+  ]
+ },
+ "field": {
+  "name": "솔바람 들판",
+  "w": 64,
+  "h": 44,
+  "music": "field",
+  "tint": [
+   1,
+   1,
+   1
+  ],
+  "ground": [
+   "................................................................",
+   "................................................................",
+   "................................................................",
+   "................................................................",
+   "............................PPPP................................",
+   ".........................PPPPPPP.............WWWWWWW............",
+   "......................PPPPPPP...............WWWWWWWWWW..........",
+   "......................PPPP.................WWWWWWWWWWW..........",
+   "......................PP...................WWWWWWWWWWW..........",
+   "......................PP...................WWWWWWWWWWW..........",
+   "......................PP...................WWWWWWWWWWW..........",
+   "......................PP.....................WWWWWWW............",
+   "......................PP........................................",
+   "......................PP........................................",
+   "......................PP........................................",
+   "......................PP........................................",
+   "......................PPPPPPPPPPPPPPPP..........................",
+   "....................PPPPPPPPPPPPPPPPPPPP........................",
+   "..................PPPPP.............PPPPPP......................",
+   ".................PPPP................PPPPPP.....................",
+   "...............PPPP..................PP..PPPP...................",
+   "PPPPPPPPPPPPPPPPPP...................PP...PPPPP.................",
+   "PPPPPPPPPPPPPPPP.....................PPP....PPPPPPPPPPPPPPPPPPPP",
+   "......................................PP......PPPPPPPPPPPPPPPPPP",
+   "......................................PP........................",
+   "......................................PPP.......................",
+   ".......................................PP.......................",
+   ".......................................PP.......................",
+   ".........WWWWWWWW......................PP.......................",
+   "........WWWWWWWWWWW....................PPP......................",
+   ".......WWWWWWWWWWWWW....................PP......................",
+   "......WWWWWWWWWWWWWWW..................PPP......................",
+   "......WWWWWW...WWWWWW.................PPP.......................",
+   "......WWWWW.....WWWWW.................PP........................",
+   "......WWWWWW...WWWWWW................PPP........................",
+   "......WWWWWWWWWWWWWWW...............PPP.........................",
+   ".......WWWWWWWWWWWWW................PP..........................",
+   "........WWWWWWWWWWW................PPP..........................",
+   ".........WWWWWWWWW................PPP...........................",
+   "..................................PP............................",
+   "................................................................",
+   "................................................................",
+   "................................................................",
+   "................................................................"
+  ],
+  "objects": [
+   "NTNNTNNtNTNTTTTTNNNTTTNNtTNTTNNtNNttNNNTTNtTNTTNNtTNTtNNtNNTtTNN",
+   "N N T N N T t N N T t T N T T N T N N N T N N t N N T N t T T TT",
+   "TNt t N t N N t N N t N t N N N N t T T T T NgT t T N N N N N  N",
+   "N         gb        b g g                    g             r NTT",
+   "Ntt        b  T  r                    g         B              T",
+   "N       g      Mg                      N N                   NTT",
+   "NNN   t t t         g          g   R  NTN N               g    N",
+   "t    t t t t M      b            b     N N            g      NTN",
+   "NNN   t t t     b                      r                       N",
+   "T  g t t t t             g                            g      ttN",
+   "NtN   t t t          M          g                              t",
+   "N  g                                       g         b g  r  NNN",
+   "NTN                      g                                     N",
+   "t                  T                            r            NNN",
+   "NTT                                          r   T             T",
+   "N                   g                         g r            TTt",
+   "tNN         gg     r                                           N",
+   "N                                               R            tNN",
+   "NNT                        b                    T T            t",
+   "t                     g   g                       g          TNN",
+   "                              g    g              g             ",
+   "                             g  b  bg                           ",
+   "                      g          b         r                    ",
+   "  b g      g                      g       g  b                  ",
+   "NNN                                                             ",
+   "T  b           B             b                    b          tTt",
+   "TtN                       b N N NR               T           g N",
+   "N           g   b  g       N N N N              B   g        NTN",
+   "tTN                      R  N N N                           g  t",
+   "N                          N N N N           g               NNT",
+   "NtT                       RgN N N      b                       N",
+   "N                    b                           T T T T     ttN",
+   "TtN                         g    b g     g      T T T TbT      T",
+   "t g g                        r g        r        T T T T   M TNt",
+   "NtN                            r           T    T T T T T      T",
+   "T    g                                      g    T T T T     NNN",
+   "TNT  T                                          T T T T T   b  N",
+   "t                          g      M              TgTMT T     NtT",
+   "TTt   B            g            b              Tg              N",
+   "N                      b g    g                              NNt",
+   "NtN                  r                g                    B   N",
+   "t  T t T T t N t N N N T NrNBN NgN N N N t T NbN T t N t T T ttt",
+   "tN T N t t N T T N N N T T N N T N T N t T N N N T N T t T t N T",
+   "NtNNNNTTNNNtTNttNttNNTNtTTNtNNNNNtNtttNtNNTttNNtTTNTtTtNNtTNTNtN"
+  ],
+  "entities": [
+   {
+    "type": "warp",
+    "x": 0,
+    "y": 20,
+    "w": 1,
+    "h": 4,
+    "to": "village",
+    "tx": 42,
+    "ty": 15
+   },
+   {
+    "type": "warp",
+    "x": 63,
+    "y": 20,
+    "w": 1,
+    "h": 5,
+    "to": "grove",
+    "tx": 2,
+    "ty": 12,
+    "need": "shards"
+   },
+   {
+    "type": "sign",
+    "x": 58,
+    "y": 20,
+    "text": "→ 숲지기의 빈터\n달빛 조각 셋이 모여야 길이 열린다고 한다."
+   },
+   {
+    "type": "sign",
+    "x": 4,
+    "y": 19,
+    "text": "← 달마루 마을"
+   },
+   {
+    "type": "chest",
+    "id": "chest_n",
+    "x": 30,
+    "y": 3,
+    "item": "shard"
+   },
+   {
+    "type": "chest",
+    "id": "chest_coin",
+    "x": 8,
+    "y": 12,
+    "item": "coins20"
+   },
+   {
+    "type": "shard",
+    "id": "shard_island",
+    "x": 13,
+    "y": 33
+   },
+   {
+    "type": "camp",
+    "id": "camp_wisp",
+    "x": 48,
+    "y": 30,
+    "kinds": [
+     "wisp",
+     "wisp",
+     "wisp",
+     "mushroom"
+    ],
+    "reward": "shard"
+   },
+   {
+    "type": "enemy",
+    "kind": "mushroom",
+    "x": 18,
+    "y": 24
+   },
+   {
+    "type": "enemy",
+    "kind": "mushroom",
+    "x": 26,
+    "y": 22
+   },
+   {
+    "type": "enemy",
+    "kind": "mushroom",
+    "x": 28,
+    "y": 12
+   },
+   {
+    "type": "enemy",
+    "kind": "wisp",
+    "x": 35,
+    "y": 10
+   },
+   {
+    "type": "enemy",
+    "kind": "boar",
+    "x": 44,
+    "y": 18
+   },
+   {
+    "type": "enemy",
+    "kind": "mushroom",
+    "x": 52,
+    "y": 14
+   },
+   {
+    "type": "enemy",
+    "kind": "boar",
+    "x": 24,
+    "y": 34
+   },
+   {
+    "type": "enemy",
+    "kind": "mushroom",
+    "x": 40,
+    "y": 36
+   },
+   {
+    "type": "enemy",
+    "kind": "wisp",
+    "x": 56,
+    "y": 28
+   },
+   {
+    "type": "enemy",
+    "kind": "mushroom",
+    "x": 16,
+    "y": 12
+   },
+   {
+    "type": "enemy",
+    "kind": "mushroom",
+    "x": 8,
+    "y": 26
+   }
+  ]
+ },
+ "grove": {
+  "name": "숲지기의 빈터",
+  "w": 32,
+  "h": 24,
+  "music": "boss",
+  "tint": [
+   0.86,
+   0.9,
+   1.0
+  ],
+  "ground": [
+   "................................",
+   "................................",
+   "................................",
+   "................................",
+   "................................",
+   "................................",
+   ".............PPPPPPPPP..........",
+   "...........PPPPPPPPPPPPP........",
+   ".........PPPPPPPPPPPPPPPPP......",
+   ".........PPPPPPPPPPPPPPPPP......",
+   "........PPPPPPPPPPPPPPPPPPP.....",
+   "........PPPPPPPSSSSSPPPPPPP.....",
+   "PPPPPPPPPPPPPPPSSSSSPPPPPPP.....",
+   "PPPPPPPPPPPPPPPSSSSSPPPPPPP.....",
+   "........PPPPPPPPPPPPPPPPPPP.....",
+   ".........PPPPPPPPPPPPPPPPP......",
+   ".........PPPPPPPPPPPPPPPP.......",
+   "...........PPPPPPPPPPPPP........",
+   ".............PPPPPPPPP..........",
+   "................................",
+   "................................",
+   "................................",
+   "................................",
+   "................................"
+  ],
+  "objects": [
+   "TTNTNtNNNNNNTTNTNtNNNTNTNttTNttt",
+   "T N N N N T t T T T t T T T N TN",
+   "TTN N N N N T N N T N N N T T  N",
+   "t   N N t N t N T N N N T N NTtt",
+   "NttN           g               T",
+   "N                           tTNT",
+   "NNtN                           N",
+   "T        g                  ttNN",
+   "tttt  r                        t",
+   "N                           tNNt",
+   "tTNN                           T",
+   "                           gNtTT",
+   "                           g   T",
+   "                            NttN",
+   "                               N",
+   "t     r r                   NNNN",
+   "NNTT                           N",
+   "N     g                     NTTT",
+   "tNNt                    g      N",
+   "t                           TNNN",
+   "ttNN t N N N T N N TrN T N T   N",
+   "t  N t N t t N N N T N t t N TTT",
+   "NN N N N t N N T N T T T T N N N",
+   "NTTtNNNTtTtTtNNNTtNtNTNTNtNttNtN"
+  ],
+  "entities": [
+   {
+    "type": "warp",
+    "x": 0,
+    "y": 11,
+    "w": 1,
+    "h": 4,
+    "to": "field",
+    "tx": 61,
+    "ty": 22
+   },
+   {
+    "type": "boss",
+    "x": 22,
+    "y": 12
+   },
+   {
+    "type": "spring",
+    "x": 17,
+    "y": 12
+   }
+  ]
+ }
+}
