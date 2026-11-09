@@ -1,0 +1,25 @@
+name: (도구) Godot 실행 파일 가져오기
+
+on:
+  workflow_dispatch:
+  push:
+    paths: ['.github/workflows/fetch-godot.yml']
+
+permissions:
+  contents: write
+
+jobs:
+  fetch:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Godot 리눅스 실행 파일을 godot-bin 브랜치에 올림 (작업 환경에서 내려받기용)
+        env:
+          V: 4.6.3-stable
+        run: |
+          mkdir out && cd out
+          curl -fsSL -o godot.zip "https://github.com/godotengine/godot-builds/releases/download/${V}/Godot_v${V}_linux.x86_64.zip"
+          ls -la
+          git init -q -b godot-bin
+          git add godot.zip
+          git -c user.name=ci -c user.email=ci@local commit -qm "Godot ${V}"
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" godot-bin
