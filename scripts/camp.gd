@@ -8,6 +8,9 @@ var woke := false
 
 func _ready() -> void:
 	if Game.flag(camp_id):
+		if not Game.flag(camp_id + "_shard"):
+			var w = get_tree().get_first_node_in_group("world")
+			w.spawn_pickup("shard", global_position, camp_id + "_shard")
 		queue_free()
 		return
 

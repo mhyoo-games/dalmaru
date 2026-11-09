@@ -43,9 +43,9 @@ static func _granny(tree: SceneTree, who: String) -> void:
 			[who, "숲지기는 몸집이 커서 돌진하다 나무에 부딪히면 한동안 휘청인단다. 그때를 노리렴."]])
 		return
 	var hints := []
-	if not Game.flag("chest_n"): hints.append("들판 북쪽 언덕 위 상자")
-	if not Game.flag("shard_island"): hints.append("연못 가운데 작은 섬")
-	if not Game.flag("camp_wisp"): hints.append("동남쪽 도깨비불 무리")
+	if not Game.flag("chest_n_shard"): hints.append("들판 북쪽 언덕 위 상자")
+	if not Game.flag("shard_island"): hints.append("연못 가운데 작은 섬(동쪽 나무다리로)")
+	if not Game.flag("camp_wisp_shard"): hints.append("동남쪽 도깨비불 무리")
 	_say(tree, [[who, "조각은 %d개 모았구나." % Game.shards],
 		[who, "아직 안 가 본 곳이라면… %s 쪽을 살펴보렴." % ", ".join(hints)]])
 

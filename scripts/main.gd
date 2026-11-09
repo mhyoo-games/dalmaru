@@ -77,7 +77,9 @@ func _load(key: String, spawn: Vector2i) -> void:
 	world.build(key, spawn)
 	Game.map_key = key
 	var m: Dictionary = Game.maps[key]
-	if not (key == "grove" and not Game.flag("boss_down")):
+	if key == "grove" and Game.flag("boss_down"):
+		Sound.music("field")
+	elif key != "grove":
 		Sound.music(m.music)
 	else:
 		Sound.stop_music()

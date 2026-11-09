@@ -22,7 +22,7 @@ def main():
     save('rock', O.rock(1)); save('rock_big', O.rock(2, True)); save('bush', O.bush(1)); save('bush_berry', O.bush(2, True))
     save('fence_h', O.fence('h')); save('fence_post', O.fence('post')); save('fence_v', O.fence('v'))
     save('sign', O.sign()); save('well', O.well()); save('lantern', O.lantern())
-    save('jar', O.jar(0)); save('jar_red', O.jar(1)); save('crate', O.crate())
+    save('bridge', O.bridge()); save('jar', O.jar(0)); save('jar_red', O.jar(1)); save('crate', O.crate())
     save('hanok', O.hanok(72)); save('hanok_big', O.hanok(96, 2))
     save('mushroom', strip([M.mushroom(i) for i in range(4)]))
     save('wisp', strip([M.wisp(i) for i in range(4)]))

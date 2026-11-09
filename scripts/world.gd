@@ -22,6 +22,7 @@ var data := {}
 var ysort: Node2D
 var player: CharacterBody2D
 var bounds := Rect2()
+var _foot := {}
 
 static func tileset() -> TileSet:
 	if _tileset:
@@ -86,12 +87,16 @@ func build(map_key: String, spawn := Vector2i(-1, -1)) -> void:
 			var o := Rules.cell(objs, x, y)
 			if g == "." and o == " " and rng.randf() < 0.14:
 				decal.set_cell(Vector2i(x, y), 0, Vector2i(rng.randi_range(0, 7), 1))
+	# 다리 칸도 물로 그린다 (그 위에 판자를 얹음)
+	var wet := []
+	for r in ground:
+		wet.append((r as String).replace("D", "W"))
 	for y in H + 1:
 		for x in W + 1:
 			var c := Vector2i(x, y)
 			var m := Rules.dual_mask(ground, x, y, "P")
 			if m: path.set_cell(c, 0, Vector2i(m, 2))
-			m = Rules.dual_mask(ground, x, y, "W")
+			m = Rules.dual_mask(wet, x, y, "W")
 			if m: water.set_cell(c, 0, Vector2i(m, 3))
 			m = Rules.dual_mask(ground, x, y, "S")
 			if m: plaza.set_cell(c, 0, Vector2i(m, 6))
@@ -110,6 +115,15 @@ func build(map_key: String, spawn := Vector2i(-1, -1)) -> void:
 	# 지도 끝 보이지 않는 벽
 	_rect(walls, Rect2(-T, -T, W * T + 2 * T, T)); _rect(walls, Rect2(-T, H * T, W * T + 2 * T, T))
 	_rect(walls, Rect2(-T, 0, T, H * T)); _rect(walls, Rect2(W * T, 0, T, H * T))
+	for y in H:
+		for x in W:
+			if Rules.cell(ground, x, y) == "D":
+				var b := Sprite2D.new()
+				b.texture = Fx.tex("bridge")
+				b.centered = false
+				b.position = Vector2(x * T, y * T)
+				b.z_index = -12
+				add_child(b)
 	ysort = Node2D.new()
 	ysort.y_sort_enabled = true
 	add_child(ysort)
@@ -326,6 +340,14 @@ func _entity(e: Dictionary, spawn: Vector2i) -> void:
 					else:
 						Game.say("달빛 조각이 모자라다 (%d/%d)" % [Game.shards, Rules.SHARDS_NEEDED])
 						player.push_back(Vector2(-1, 0) if x > 2 else Vector2(1, 0)))
+
+func walkable_at(p: Vector2) -> bool:
+	var c := Vector2i(int(p.x / T), int(p.y / T))
+	if c.x < 1 or c.y < 1 or c.x >= int(data.w) - 1 or c.y >= int(data.h) - 1:
+		return false
+	if _foot.is_empty():
+		_foot = Rules.footprint_cells(data.entities)
+	return not _foot.has(c) and not Rules.blocks(Rules.cell(data.ground, c.x, c.y), Rules.cell(data.objects, c.x, c.y))
 
 func _door_text(n: String) -> String:
 	match n:

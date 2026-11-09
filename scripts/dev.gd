@@ -89,6 +89,74 @@ func _run() -> void:
 			await wait(1.0)
 			print("map after walk back: ", Game.map_key)
 			await shot("warp_back")
+		"full":
+			# 처음부터 끝까지 순서대로 (순간이동 + 직접 호출로 빠르게)
+			var p = get_tree().get_first_node_in_group("player")
+			p.invuln = 9999.0
+			for n in get_tree().get_nodes_in_group("interact"):
+				if n.get("npc_id") == "granny":
+					p.position = n.position + Vector2(0, 16); p.facing = Vector2.UP
+			await tap("act"); await wait(0.3); await close_dialogs()
+			print("talked granny: ", Game.flag("talked_granny"))
+			p.position = Vector2(41 * 16, 15 * 16 + 14)
+			await hold("right", 1.2); await wait(1.0)
+			print("map: ", Game.map_key)
+			p = get_tree().get_first_node_in_group("player"); p.invuln = 9999.0
+			# 동쪽 숲길: 조각이 모자라면 못 들어감
+			p.position = Vector2(60 * 16, 22 * 16 + 14)
+			await hold("right", 1.0); await wait(0.5)
+			print("blocked without shards, map: ", Game.map_key)
+			await close_dialogs()
+			# 상자
+			for n in get_tree().get_nodes_in_group("interact"):
+				if n.get("chest_id") == "chest_n":
+					p.position = n.position + Vector2(0, 16); p.facing = Vector2.UP
+			await wait(0.2); await tap("act"); await wait(0.5); await close_dialogs()
+			print("after chest shards: ", Game.shards)
+			# 섬
+			p.position = Vector2(13 * 16 + 8, 33 * 16 + 14); await wait(0.6); await close_dialogs()
+			print("after island shards: ", Game.shards)
+			# 무리
+			p.position = Vector2(48 * 16, 30 * 16 + 40); await wait(1.0)
+			for i in 6:
+				for e in get_tree().get_nodes_in_group("enemy"):
+					if e.global_position.distance_to(p.global_position) < 120: e.take_hit(99, p.global_position)
+				await wait(0.3)
+			await wait(0.5)
+			var w = get_tree().get_first_node_in_group("world")
+			for n in w.ysort.get_children():
+				if n.get("kind") == "shard": p.position = n.position
+			await wait(0.6); await close_dialogs()
+			print("after camp shards: ", Game.shards)
+			p.position = Vector2(60 * 16, 22 * 16 + 14)
+			await hold("right", 1.2); await wait(1.2)
+			print("map: ", Game.map_key)
+			p = get_tree().get_first_node_in_group("player"); p.invuln = 9999.0; p.no_blink = true
+			var b = get_tree().get_first_node_in_group("boss")
+			p.position = b.position - Vector2(100, 0)
+			await wait(2.4)
+			b.take_hit(99, p.global_position)
+			await wait(4.0)
+			await shot("full_end")
+			await close_dialogs()
+			print("boss_down: ", Game.flag("boss_down"), " max_hp ", Game.max_hp)
+			main().go_map("village", Vector2i(10, 21)); await wait(1.2)
+			p = get_tree().get_first_node_in_group("player")
+			for n in get_tree().get_nodes_in_group("interact"):
+				if n.get("npc_id") == "granny":
+					p.position = n.position + Vector2(0, 16); p.facing = Vector2.UP
+			await tap("act"); await wait(1.0); await shot("full_thanks"); await close_dialogs()
+			print("thanked: ", Game.flag("thanked"))
+		"bridge":
+			main().go_map("field", Vector2i(23, 33))
+			await wait(1.2)
+			for e in get_tree().get_nodes_in_group("enemy"): e.queue_free()
+			await shot("bridge_start")
+			await hold("left", 2.2)
+			await wait(0.6)
+			print("shards after island: ", Game.shards)
+			await shot("bridge_island")
+			await close_dialogs()
 		"field":
 			main().go_map("field", Vector2i(16, 22))
 			await wait(1.2)

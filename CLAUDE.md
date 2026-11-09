@@ -18,5 +18,5 @@ Godot 4(GDScript)로 만드는 탑다운 액션 RPG. 웹으로 내보내 GitHub 
 - npm/pip 설치와 github.io 접속이 막혀 있을 수 있다. Godot 실행 파일·웹 템플릿·글꼴은 `godot-bin` 브랜치에 있다 (`.github/workflows/fetch-godot.yml`이 만든다).
   `git fetch origin godot-bin && git show FETCH_HEAD:godot.zip > g.zip` 처럼 꺼내 쓴다.
 - 화면 확인: `xvfb-run godot --rendering-driver opengl3 --audio-driver Dummy -- --dev=village --out=/tmp/x`
-  (`scripts/dev.gd`가 정해진 순서로 조작하며 화면을 찍는다. 장면: title, village, field, grove, talk)
+  (`scripts/dev.gd`가 정해진 순서로 조작하며 화면을 찍는다. 장면: title, village, field, grove, talk, warp, bridge, combat, full(처음부터 엔딩까지))
 - 웹 확인: `godot --headless --export-release "Web" build/web/index.html` 후 로컬 http 서버 + headless Chrome(swiftshader).

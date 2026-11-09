@@ -272,6 +272,20 @@ def jar(kind=0):
     im.alpha_composite(outline(b))
     return im
 
+def bridge():
+    """물 위 나무다리 한 칸 (가로로 이어 붙임)."""
+    im = img(16, 16)
+    for x in range(16):
+        for y in range(3, 14):
+            c = 'b3' if (x % 4) != 3 else 'b1'
+            if y == 3: c = 'b4' if (x % 4) != 3 else 'b2'
+            if y == 13: c = 'b0'
+            put(im, x, y, c)
+        put(im, x, 14, 'w1'); put(im, x, 2, 'b1'); put(im, x, 1, 'b2' if x % 8 else 'b0')
+    for x in (0, 8):
+        for y in range(0, 4): put(im, x, y, 'b1')
+    return im
+
 def crate():
     im = img(16, 16)
     for x in range(2, 15): put(im, x, 15, 'shadow')

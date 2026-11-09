@@ -62,6 +62,32 @@ func _maps() -> void:
 			if e.type == "npc":
 				ok(e.id in ["granny", "smith", "kid"], "대사가 있는 사람: " + e.id)
 	ok(shard_sources == Rules.SHARDS_NEEDED, "달빛 조각은 딱 셋")
+	# 들어오는 자리(출구 도착 칸·시작 칸)에서 걸어서 모든 것에 닿는지
+	for k in maps:
+		var m: Dictionary = maps[k]
+		var starts := []
+		for kk in maps:
+			for e in maps[kk].entities:
+				if e.type == "warp" and e.to == k: starts.append(Vector2i(e.tx, e.ty))
+		for e in m.entities:
+			if e.type == "player": starts.append(Vector2i(e.x, e.y))
+		ok(not starts.is_empty(), k + " 들어오는 자리가 있음")
+		for s in starts:
+			var seen := Rules.reachable(m, s)
+			for e in m.entities:
+				var c := Vector2i(e.x, e.y)
+				if e.type == "house": c = Vector2i(e.door[0], e.door[1] + 1)
+				if e.type == "well": c = Vector2i(e.x, e.y + 1)
+				if e.type in ["spring"]: continue
+				if e.type == "warp":
+					var any := false
+					for yy in range(e.y, e.y + e.h):
+						if Rules.can_reach(seen, Vector2i(e.x, yy)): any = true
+					ok(any, "%s: %s에서 출구(→%s)에 닿음" % [k, s, e.to])
+				else:
+					ok(Rules.can_reach(seen, c), "%s: %s에서 %s(%d,%d)에 닿음" % [k, s, e.get("id", e.type), e.x, e.y])
+	ok(Rules.reachable({"w": 3, "h": 1, "ground": [".W."], "objects": ["   "], "entities": []}, Vector2i(0, 0)).size() == 1, "물은 못 건넘")
+	ok(Rules.reachable({"w": 3, "h": 1, "ground": [".D."], "objects": ["   "], "entities": []}, Vector2i(0, 0)).size() == 3, "다리는 건넘")
 
 func _assets() -> void:
 	for n in ["tiles", "hero", "mushroom", "wisp", "boar", "boss", "hearts", "coin", "moonshard", "ui_box", "hanok", "hanok_big", "well"]:

@@ -1,5 +1,5 @@
 """지도를 코드로 짓는다 → data/maps.json
-땅(ground): . 풀  P 흙길  S 돌바닥  W 물
+땅(ground): . 풀  P 흙길  S 돌바닥  W 물  D 물 위 나무다리
 소품(objects): T 둥근나무 t 둥근나무2 M 단풍 N 소나무 r 바위 R 큰바위 b 덤불(벨 수 있음) B 열매덤불
                g 긴풀(벨 수 있음) w 꽃무더기 f 울타리 F 울타리기둥 v 세로울타리 l 석등 j 항아리 J 붉은항아리 c 상자 # 막힘
 python3 tools/maps/gen.py
@@ -134,6 +134,11 @@ def field():
         for _ in range(9): m.obj(cx + m.r.randint(-3, 3), cy + m.r.randint(-2, 2), 'w')
     m.scatter('g', 40); m.scatter('b', 26); m.scatter('B', 6); m.scatter('r', 14); m.scatter('R', 5); m.scatter('M', 6); m.scatter('T', 10)
     m.clear(12, 32, 14, 34)
+    # 연못 섬으로 건너가는 나무다리 (D: 물 위 다리, 지나갈 수 있음)
+    for x in range(14, m.w):
+        if m.g[33][x] == 'W': m.g[33][x] = 'D'; m.o[33][x] = ' '
+        elif x > 16: break
+    for x in range(22, 25): m.o[33][x] = ' '
     return m
 
 def grove():

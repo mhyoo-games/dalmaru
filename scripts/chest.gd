@@ -56,8 +56,10 @@ func interact(_p: Node) -> void:
 	var w = get_tree().get_first_node_in_group("world")
 	match item:
 		"shard":
-			if w: w.spawn_pickup("shard", position + Vector2(0, 10), chest_id + "_shard")
-			get_tree().call_group("main", "dialog", [["", "상자 안에서 달빛 조각이 굴러 나왔다!"]])
+			Game.shards += 1
+			Game.set_flag(chest_id + "_shard")
+			Sound.play("shard", 0.0)
+			get_tree().call_group("main", "got_shard")
 		"coins20":
 			Game.add_coins(20)
 			get_tree().call_group("main", "dialog", [["", "엽전 꾸러미를 찾았다! (엽전 +20)"]])

@@ -18,6 +18,7 @@ var leap_to := Vector2.ZERO
 var charges := 0
 var pattern := 0
 var hurt_cd := 0.0
+var home := Vector2.ZERO
 
 class Ring extends Node2D:
 	var r := 0.0
@@ -37,6 +38,7 @@ class Ring extends Node2D:
 func _ready() -> void:
 	add_to_group("hittable")
 	add_to_group("boss")
+	home = position
 	collision_layer = 4
 	collision_mask = 1
 	motion_mode = CharacterBody2D.MOTION_MODE_FLOATING
@@ -104,6 +106,11 @@ func _physics_process(delta: float) -> void:
 					_go("leap_up")
 					leap_from = position
 					leap_to = p.global_position
+					var w = get_tree().get_first_node_in_group("world")
+					var tries := 0
+					while w and not (w.walkable_at(leap_to) and w.walkable_at(leap_to + Vector2(-20, 0)) and w.walkable_at(leap_to + Vector2(20, 0))) and tries < 8:
+						leap_to = leap_to.lerp(home, 0.3)
+						tries += 1
 				else:
 					charges = 2 if hp <= MAX_HP / 2 else 1
 					_go("aim")

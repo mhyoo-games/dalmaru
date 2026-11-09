@@ -29,6 +29,45 @@ static func dual_mask(rows: Array, x: int, y: int, ch: String) -> int:
 static func blocks(ground: String, obj: String) -> bool:
 	return ground == "W" or (obj != " " and BLOCKING_OBJECTS.contains(obj))
 
+## 집·우물이 차지하는 칸 (엔티티 목록에서)
+static func footprint_cells(entities: Array) -> Dictionary:
+	var out := {}
+	for e in entities:
+		if e.type in ["house", "well"]:
+			var fw: int = e.get("fw", 1)
+			var fh: int = e.get("fh", 1)
+			for yy in range(int(e.y) - fh + 1, int(e.y) + 1):
+				for xx in range(int(e.x) - (1 if e.type == "well" else 0), int(e.x) + fw - (1 if e.type == "well" else 0)):
+					out[Vector2i(xx, yy)] = true
+	return out
+
+## 시작 칸에서 걸어서 닿는 칸들. 벨 수 있는 덤불·항아리는 지나갈 수 있는 것으로 본다.
+static func reachable(m: Dictionary, start: Vector2i) -> Dictionary:
+	var blocked := footprint_cells(m.entities)
+	var seen := {start: true}
+	var q: Array[Vector2i] = [start]
+	var W: int = m.w
+	var H: int = m.h
+	while not q.is_empty():
+		var c: Vector2i = q.pop_back()
+		for d in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+			var n: Vector2i = c + d
+			if n.x < 0 or n.y < 0 or n.x >= W or n.y >= H or seen.has(n) or blocked.has(n):
+				continue
+			var o := cell(m.objects, n.x, n.y)
+			if blocks(cell(m.ground, n.x, n.y), o) and not CUTTABLE.contains(o) and o != "j" and o != "J":
+				continue
+			seen[n] = true
+			q.append(n)
+	return seen
+
+## 칸 자체 또는 바로 옆 칸에 닿을 수 있나 (말 걸기·줍기)
+static func can_reach(seen: Dictionary, c: Vector2i) -> bool:
+	for d in [Vector2i.ZERO, Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+		if seen.has(c + d):
+			return true
+	return false
+
 static func sword_damage(level: int) -> int:
 	return 1 + level
 

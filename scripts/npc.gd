@@ -50,7 +50,10 @@ func _process(delta: float) -> void:
 		if position.distance_to(goal) < 1:
 			wait -= delta
 			if wait <= 0:
-				goal = home + Vector2(randf_range(-1, 1), randf_range(-1, 1)) * wander * 16
+				var g := home + Vector2(randf_range(-1, 1), randf_range(-1, 1)) * wander * 16
+				var w = get_tree().get_first_node_in_group("world")
+				if w == null or w.walkable_at(g):
+					goal = g
 				wait = randf_range(1.5, 3.5)
 		else:
 			position = position.move_toward(goal, 18 * delta)
