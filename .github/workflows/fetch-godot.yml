@@ -18,8 +18,11 @@ jobs:
         run: |
           mkdir out && cd out
           curl -fsSL -o godot.zip "https://github.com/godotengine/godot-builds/releases/download/${V}/Godot_v${V}_linux.x86_64.zip"
-          ls -la
+          curl -fsSL -o t.tpz "https://github.com/godotengine/godot-builds/releases/download/${V}/Godot_v${V}_export_templates.tpz"
+          unzip -q t.tpz 'templates/web_nothreads_*' 'templates/version.txt'
+          rm t.tpz
+          ls -laR
           git init -q -b godot-bin
-          git add godot.zip
+          git add godot.zip templates
           git -c user.name=ci -c user.email=ci@local commit -qm "Godot ${V}"
           git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" godot-bin
