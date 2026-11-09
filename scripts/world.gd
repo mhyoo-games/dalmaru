@@ -311,6 +311,8 @@ func _entity(e: Dictionary, spawn: Vector2i) -> void:
 			sh.size = Vector2(e.w * T, e.h * T)
 			cs.shape = sh
 			a.position = Vector2(x * T, y * T) + sh.size / 2
+			a.collision_layer = 0
+			a.collision_mask = 2  # 주인공 층
 			a.add_child(cs)
 			add_child(a)
 			var to: String = e.to

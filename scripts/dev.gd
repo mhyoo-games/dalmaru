@@ -75,6 +75,20 @@ func _run() -> void:
 			await shot("village_attack")
 			await hold("up", 0.6)
 			await shot("village_plaza")
+		"warp":
+			# 마을 동쪽 출구까지 걸어가서 들판으로 넘어가는지
+			var p = get_tree().get_first_node_in_group("player")
+			p.position = Vector2(38 * 16 + 8, 15 * 16 + 14)
+			await hold("right", 2.0)
+			await wait(1.0)
+			print("map after walk: ", Game.map_key)
+			await shot("warp_field")
+			p = get_tree().get_first_node_in_group("player")
+			p.position = Vector2(4 * 16, 21 * 16 + 14)
+			await hold("left", 1.5)
+			await wait(1.0)
+			print("map after walk back: ", Game.map_key)
+			await shot("warp_back")
 		"field":
 			main().go_map("field", Vector2i(16, 22))
 			await wait(1.2)

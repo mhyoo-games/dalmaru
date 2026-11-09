@@ -21,7 +21,7 @@ jobs:
           curl -fsSL -o t.tpz "https://github.com/godotengine/godot-builds/releases/download/${V}/Godot_v${V}_export_templates.tpz"
           unzip -q t.tpz 'templates/web_nothreads_*' 'templates/version.txt'
           rm t.tpz
-          npm pack galmuri@2.40.3 >/dev/null && tar -xzf galmuri-2.40.3.tgz && mkdir fonts && cp package/dist/Galmuri11.ttf package/dist/Galmuri11-Bold.ttf package/dist/Galmuri9.ttf fonts/ && rm -rf package galmuri-*.tgz
+          npm pack galmuri@2.40.3 >/dev/null && tar -xzf galmuri-2.40.3.tgz && mkdir fonts && cp package/dist/Galmuri11.ttf package/dist/Galmuri11-Bold.ttf package/dist/Galmuri9.ttf package/dist/Galmuri14.ttf fonts/ && rm -rf package galmuri-*.tgz
           file fonts/* || true
           ls -laR
           git init -q -b godot-bin
