@@ -18,7 +18,8 @@ var dlg_name: Label
 var dlg_name_bg: NinePatchRect
 var dlg_text: Label
 var dlg_arrow: Label
-var dlg_choices: VBoxContainer
+var dlg_choices: NinePatchRect
+var choice_list: VBoxContainer
 var lines: Array = []
 var line_i := 0
 var shown := 0.0
@@ -185,9 +186,14 @@ func _build_dialog() -> void:
 	dlg_arrow = UI.label("▼", 10, Color("a8323a"), false, true)
 	dlg_arrow.position = Vector2(348, 42)
 	dlg.add_child(dlg_arrow)
-	dlg_choices = VBoxContainer.new()
-	dlg_choices.add_theme_constant_override("separation", 0)
+	# 고르기 창: 종이 상자 안에 줄을 세운다
+	dlg_choices = UI.box()
+	dlg_choices.visible = false
 	root.add_child(dlg_choices)
+	choice_list = VBoxContainer.new()
+	choice_list.add_theme_constant_override("separation", 2)
+	choice_list.position = Vector2(10, 7)
+	dlg_choices.add_child(choice_list)
 
 func open_dialog(l: Array, cb := Callable(), ch: Array = []) -> void:
 	lines = l
@@ -214,7 +220,8 @@ func _show_line() -> void:
 	_clear_choices()
 
 func _clear_choices() -> void:
-	for c in dlg_choices.get_children():
+	for c in choice_list.get_children():
+		choice_list.remove_child(c)
 		c.queue_free()
 	dlg_choices.visible = false
 
@@ -223,16 +230,13 @@ func _show_choices() -> void:
 	dlg_choices.visible = true
 	var wmax := 0.0
 	for i in choices.size():
-		var l := UI.label(("▶ " if i == choice_i else "   ") + choices[i], 10, UI.INK if i == choice_i else Color("5b5a70"), false, true)
-		dlg_choices.add_child(l)
-		wmax = maxf(wmax, Game.font_small.get_string_size(l.text, HORIZONTAL_ALIGNMENT_LEFT, -1, 10).x)
-	var bg := UI.box()
-	bg.show_behind_parent = true
-	bg.size = Vector2(wmax + 18, choices.size() * 13 + 10)
-	bg.position = Vector2(-9, -5)
-	dlg_choices.add_child(bg)
-	dlg_choices.move_child(bg, 0)
-	dlg_choices.position = Vector2(374 - wmax - 14, 150 - choices.size() * 13 - 4)
+		var on := i == choice_i
+		var l := UI.label(("▶ " if on else "  ") + choices[i], 12, Color("a8323a") if on else UI.INK, false)
+		choice_list.add_child(l)
+		wmax = maxf(wmax, Game.font.get_string_size("▶ " + choices[i], HORIZONTAL_ALIGNMENT_LEFT, -1, 12).x)
+	var h := choices.size() * 16 + 12
+	dlg_choices.size = Vector2(wmax + 24, h)
+	dlg_choices.position = Vector2(374 - dlg_choices.size.x, dlg.position.y - h - 2)
 
 func _process(delta: float) -> void:
 	if talking:
