@@ -118,12 +118,12 @@ def plaza_tile(mask, seed=23):
                 continue
             # 8×8 벽돌 무늬 (반 칸씩 엇갈림)
             bx = (x + (4 if (y // 8) % 2 else 0)) % 8; by = y % 8
-            c = 'p0'
-            if by == 7 or bx == 7: c = 'd1'
-            elif by == 0 or bx == 0: c = 'p1'
-            elif (x * 7 + y * 3) % 11 == 0: c = 'd2'
-            if not inside(x, y - 1) or not inside(x - 1, y) or not inside(x + 1, y): c = 'd2'
-            if not inside(x, y + 1): c = 'd1'
+            c = 's2'
+            if by == 7 or bx == 7: c = 's1'
+            elif by == 0 or bx == 0: c = 's3'
+            elif (x * 7 + y * 3) % 13 == 0: c = 's1'
+            if not inside(x, y - 1) or not inside(x - 1, y) or not inside(x + 1, y): c = 's1'
+            if not inside(x, y + 1): c = 's0'
             put(im, x, y, c)
     return im
 

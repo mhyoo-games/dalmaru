@@ -131,9 +131,9 @@ func _run() -> void:
 			var w = get_tree().get_first_node_in_group("world")
 			var p = get_tree().get_first_node_in_group("player")
 			for e in get_tree().get_nodes_in_group("enemy"): e.queue_free()
-			w.spawn_enemy("mushroom", p.position + Vector2(30, 0))
-			w.spawn_enemy("boar", p.position + Vector2(-60, 30))
-			w.spawn_enemy("wisp", p.position + Vector2(40, -50))
+			w.spawn_enemy("mushroom", p.position + Vector2(60, 0))
+			w.spawn_enemy("boar", p.position + Vector2(-90, 40))
+			w.spawn_enemy("wisp", p.position + Vector2(60, -60))
 			await wait(1.0)
 			await shot("c_spawn")
 			p.facing = Vector2.RIGHT
