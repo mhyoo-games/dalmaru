@@ -10,7 +10,7 @@
 | 3 | 서리봉 고개 → 얼음굴 | 불씨 돌 | 서리곰 |
 | 4 | 달그림자 성터 → 옛 궁터 | 달그림자 조각 | 달그림자 도깨비왕 |
 
-▶ 바로 하기: https://minhyuk94.github.io/dalmaru/ (PC 키보드·게임패드, 휴대폰은 화면 버튼)
+▶ 바로 하기: https://mhyoo-games.github.io/dalmaru/ (PC 키보드·게임패드, 휴대폰은 화면 버튼)
 
 ## 조작
 
