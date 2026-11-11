@@ -39,7 +39,7 @@ func _ready() -> void:
 	sub.size = Vector2(384, 14)
 	sub.position = Vector2(0, 74)
 	add_child(sub)
-	items = ["처음부터"]
+	items = ["처음부터", "만든 것들"]
 	if Game.has_save():
 		items.push_front("이어하기")
 	for i in items.size():
@@ -77,6 +77,8 @@ func _process(delta: float) -> void:
 	t += delta
 	logo.position.y = 44 + sin(t * 1.5) * 1.5
 	queue_redraw()
+	if has_node("Licenses") or Time.get_ticks_msec() < lic_until:
+		return
 	if mode == "select":
 		if Input.is_action_just_pressed("left") or Input.is_action_just_pressed("right"):
 			pick = posmod(pick + (1 if Input.is_action_just_pressed("right") else -1), heroes.size())
@@ -96,6 +98,10 @@ func _process(delta: float) -> void:
 		Sound.play("select", 0.0, -4)
 		_labels()
 	if Input.is_action_just_pressed("act"):
+		if items[sel] == "만든 것들":
+			Sound.play("select", 0.0, -2)
+			_licenses()
+			return
 		if items[sel] == "처음부터":
 			Sound.play("select", 0.0, -2)
 			mode = "select"
@@ -105,6 +111,22 @@ func _process(delta: float) -> void:
 		Sound.play("chest", 0.0, -4)
 		set_process(false)
 		get_tree().call_group("main", "start", true)
+
+var lic_until := 0
+
+## 만든 것들·라이선스 (Godot 엔진·글꼴)
+func _licenses() -> void:
+	var l: Control = preload("res://scripts/licenses.gd").new()
+	l.credits = [
+		"달마루 모험기 — 유민혁 (minhyuk94)",
+		"게임 엔진: Godot Engine (MIT 라이선스) — godotengine.org/license",
+		"글꼴: 갈무리 Galmuri (SIL Open Font License 1.1) — github.com/quiple/galmuri",
+		"도트 그림·지도·효과음·곡: 코드로 새로 만듦",
+	]
+	l.font_size = 10
+	l.font = Game.font
+	l.closed.connect(func(): lic_until = Time.get_ticks_msec() + 200)
+	add_child(l)
 
 func _show_menu(v: bool) -> void:
 	for l in labels: l.visible = v

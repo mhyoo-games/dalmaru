@@ -59,6 +59,10 @@ func _run() -> void:
 	await shot("title")
 	if plan == "title":
 		get_tree().quit(); return
+	if plan == "licenses":
+		var tl = get_tree().get_first_node_in_group("main").title
+		tl._licenses(); await wait(0.5); await shot("licenses")
+		get_tree().quit(); return
 	if plan == "select":
 		if Game.has_save(): await tap("down")
 		await tap("act"); await wait(0.4)

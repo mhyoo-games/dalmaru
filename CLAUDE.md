@@ -8,6 +8,7 @@ Godot 4(GDScript)로 만드는 탑다운 액션 RPG. 웹으로 내보내 GitHub 
 
 ## 지킬 것
 
+- 라이선스 화면: `scripts/licenses.gd`가 Godot 엔진(MIT)과 그 안의 라이브러리(`Engine.get_license_text/get_copyright_info/get_license_info`), 갈무리 글꼴 전문(`assets/fonts/OFL.txt`, 내보내기 `include_filter`에 넣음), 그림 출처를 보여 준다. 처음 화면에서 연다. 상업·무료 상관없이 Godot 배포 조건이라 지우지 않는다. 새 에셋을 쓰면 여기 `credits`에도 적는다.
 - 옛 PC RPG·온라인 게임에서 영감을 받았지만 **새로 만든 세계관**이다. 다른 게임의 이름·캐릭터·그림·음악·지도를 쓰지 않고, 다른 회사·게임 이름을 README·화면·이력서에 넣지 않는다.
 - **그림·소리·지도는 코드로 만든다.** `tools/art/gen.py`(도트 그림), `tools/sound/gen.py`(효과음·배경음), `tools/maps/gen.py`(지도 → `data/maps.json`). 결과 파일을 직접 고치지 말고 생성기를 고친 뒤 다시 돌린다. 글꼴만 예외(갈무리, OFL, `assets/fonts/LICENSE.txt`).
 - 규칙(계산)은 `scripts/rules.gd`에 모으고 `tests/run_tests.gd`에 테스트를 더한다. CI(`ci.yml`)가 생성기 재실행 → 테스트 → 켜지는지 → 웹 내보내기 → Pages 배포까지 한다.
