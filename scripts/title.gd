@@ -118,7 +118,7 @@ var lic_until := 0
 func _licenses() -> void:
 	var l: Control = preload("res://scripts/licenses.gd").new()
 	l.credits = [
-		"달마루 모험기 — 유민혁 (minhyuk94)",
+		"달마루 모험기 — 심심풀이",
 		"게임 엔진: Godot Engine (MIT 라이선스) — godotengine.org/license",
 		"글꼴: 갈무리 Galmuri (SIL Open Font License 1.1) — github.com/quiple/galmuri",
 		"도트 그림·지도·효과음·곡: 코드로 새로 만듦",
